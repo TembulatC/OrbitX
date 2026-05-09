@@ -1,0 +1,24 @@
+services:
+  orbitx:
+    image: ${DOCKER_REGISTRY-}orbitx
+    build:
+      context: .
+      dockerfile: OrbitX/Dockerfile
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15-alpine
+    container_name: orbitx-db
+    restart: always
+    environment:
+      POSTGRES_USER: orbitx_user
+      POSTGRES_PASSWORD: orbitx_password
+      POSTGRES_DB: orbitx_database
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
