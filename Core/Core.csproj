@@ -7,9 +7,27 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Modules\TLEData\" />
+    <Compile Remove="Modules\GeoTracking\Infrastructure\DBContext\**" />
+    <EmbeddedResource Remove="Modules\GeoTracking\Infrastructure\DBContext\**" />
+    <None Remove="Modules\GeoTracking\Infrastructure\DBContext\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Modules\GeoTracking\Application\Services\" />
+    <Folder Include="Modules\GeoTracking\Application\DTOs\" />
+    <Folder Include="Modules\GeoTracking\Domain\Models\" />
+    <Folder Include="Modules\GeoTracking\Domain\Intefaces\" />
+    <Folder Include="Modules\GeoTracking\Infrastructure\Repositories\" />
     <Folder Include="Modules\SGP4Data\" />
-    <Folder Include="Modules\GeoTracking\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.9" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.9">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
   </ItemGroup>
 
 </Project>

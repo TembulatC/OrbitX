@@ -4,6 +4,11 @@ services:
     build:
       context: .
       dockerfile: OrbitX/Dockerfile
+    env_file:
+      - .env
+    environment:
+      - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING}
+      - ASPNETCORE_ENVIRONMENT=Development
     depends_on:
       - db
 
@@ -12,9 +17,9 @@ services:
     container_name: orbitx-db
     restart: always
     environment:
-      POSTGRES_USER: orbitx_user
-      POSTGRES_PASSWORD: orbitx_password
-      POSTGRES_DB: orbitx_database
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5435:5432"
     volumes:
