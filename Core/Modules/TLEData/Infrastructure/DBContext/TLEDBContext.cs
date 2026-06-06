@@ -1,8 +1,8 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore;
-using Core.Modules.TLEData.Domain.Models; // Путь к модели
+using Core.Modules.TLEData.Domain.Models;
 
-namespace Core.Modules.TLEData.Domain.Infrastructure.DBContext
+namespace Core.Modules.TLEData.Infrastructure.DBContext
 {
     public class TLEDBContext(DbContextOptions<TLEDBContext> options) : DbContext(options)
     {

@@ -19,6 +19,7 @@
     <Folder Include="Modules\GeoTracking\Domain\Intefaces\" />
     <Folder Include="Modules\GeoTracking\Infrastructure\Repositories\" />
     <Folder Include="Modules\SGP4Data\" />
+    <Folder Include="Modules\TLEData\Application\DTOs\" />
   </ItemGroup>
 
   <ItemGroup>

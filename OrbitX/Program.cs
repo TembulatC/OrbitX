@@ -1,5 +1,9 @@
-
-using Core.Modules.TLEData.Domain.Infrastructure.DBContext;
+using Core.Modules.TLEData.Application.Services;
+using Core.Modules.TLEData.Domain.Interfaces.Repositories;
+using Core.Modules.TLEData.Domain.Interfaces.Services;
+using Core.Modules.TLEData.Infrastructure.DBContext;
+using Core.Modules.TLEData.Infrastructure.HttpClients;
+using Core.Modules.TLEData.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace OrbitX
@@ -18,6 +22,13 @@ namespace OrbitX
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+
+            // Регистрируем HttpClient и сам класс клиента
+            builder.Services.AddHttpClient<HttpTLEData>();
+
+            // Добавление сервисов и репозиториев
+            builder.Services.AddScoped<ITLEData, TLEDataRepository>();
+            builder.Services.AddScoped<ITLEDataService, TLEDataService>();
 
             var app = builder.Build();
 
