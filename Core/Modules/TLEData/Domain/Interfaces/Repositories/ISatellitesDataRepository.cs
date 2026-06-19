@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Core.Modules.TLEData.Domain.Interfaces.Repositories
 {
-    public interface ITLEData
+    public interface ISatellitesDataRepository
     {
         Task AddTLEData(List<Satellite> tle, string satellitesCategory);
     }

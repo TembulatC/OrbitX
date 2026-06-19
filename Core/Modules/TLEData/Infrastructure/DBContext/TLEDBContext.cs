@@ -6,7 +6,7 @@ namespace Core.Modules.TLEData.Infrastructure.DBContext
 {
     public class TLEDBContext(DbContextOptions<TLEDBContext> options) : DbContext(options)
     {
-        // Гллавная таблица
+        // Главная таблица
         public DbSet<Satellite> Satellites { get; set; } // Создание главной таблицы
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

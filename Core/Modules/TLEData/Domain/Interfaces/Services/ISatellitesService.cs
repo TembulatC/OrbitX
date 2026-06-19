@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Core.Modules.TLEData.Domain.Interfaces.Services
 {
-    public interface ITLEDataService
+    public interface ISatellitesService
     {
         Task AddTLEData(string satellitesCategory);
     }

@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace Core.Modules.TLEData.Infrastructure.HttpClients
 {
-    public class HttpTLEData
+    public class HttpSatellitesData
     {
         private readonly HttpClient _httpClient;
 
-        public HttpTLEData (HttpClient httpClient)
+        public HttpSatellitesData (HttpClient httpClient)
         {
             _httpClient = httpClient;
         }

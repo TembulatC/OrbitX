@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Core.Modules.TLEData.Application.Services
 {
-    public static class TLEParser
+    public static class SatellitesParserService
     {
         public static List<Satellite> Parse(string httpTLEstring, string satellitesCategory)
         {
@@ -45,6 +45,7 @@ namespace Core.Modules.TLEData.Application.Services
 
             foreach (var line in tleLines)
             {
+                // Проверка на контрольную сумму перед добавлением строки
                 bool checkSum = CheckSum(line);
 
                 if (checkSum == true)
@@ -131,9 +132,6 @@ namespace Core.Modules.TLEData.Application.Services
                 }
                 else tleLine2Sum += 0;
             }
-
-            Console.WriteLine(tleLine1Sum);
-            Console.WriteLine(tleLine2Sum);
 
             // Проверяем сумму всех строк
             if (tleLine1Sum % 10 == Convert.ToInt32(tleLine[1][68].ToString()) && tleLine2Sum % 10 == Convert.ToInt32(tleLine[2][68].ToString()))

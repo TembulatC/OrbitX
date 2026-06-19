@@ -10,11 +10,11 @@ using System.Threading.Tasks;
 
 namespace Core.Modules.TLEData.Infrastructure.Repositories
 {
-    public class TLEDataRepository : ITLEData
+    public class SatellitesDataRepository : ISatellitesDataRepository
     {
         private readonly TLEDBContext _dbContext;
 
-        public TLEDataRepository(TLEDBContext dbContext)
+        public SatellitesDataRepository(TLEDBContext dbContext)
         {
             _dbContext = dbContext;
         }

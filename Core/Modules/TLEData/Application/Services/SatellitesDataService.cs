@@ -10,12 +10,12 @@ using System.Threading.Tasks;
 
 namespace Core.Modules.TLEData.Application.Services
 {
-    public class TLEDataService : ITLEDataService
+    public class SatellitesDataService : ISatellitesService
     {
-        private readonly ITLEData _tleData;
-        private readonly HttpTLEData _httpData;
+        private readonly ISatellitesDataRepository _tleData;
+        private readonly HttpSatellitesData _httpData;
 
-        public TLEDataService(ITLEData tleData, HttpTLEData httpTLEData)
+        public SatellitesDataService(ISatellitesDataRepository tleData, HttpSatellitesData httpTLEData)
         {
             _tleData = tleData;
             _httpData = httpTLEData;
@@ -24,8 +24,7 @@ namespace Core.Modules.TLEData.Application.Services
         public async Task AddTLEData(string satellitesCategory)
         {
             string httpTLEstring = await _httpData.GetTLEData(satellitesCategory);
-
-            List<Satellite> tle = TLEParser.Parse(httpTLEstring, satellitesCategory);
+            List<Satellite> tle = SatellitesParserService.Parse(httpTLEstring, satellitesCategory);
 
             await _tleData.AddTLEData(tle, satellitesCategory);
         }
