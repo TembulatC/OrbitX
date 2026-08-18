@@ -1,5 +1,5 @@
-﻿using Core.Modules.TLEData.Domain.Interfaces.Repositories;
-using Core.Modules.TLEData.Domain.Interfaces.Services;
+﻿using Core.Modules.TLEData.Application.Interfaces;
+using Core.Modules.TLEData.Domain.Interfaces;
 using Core.Modules.TLEData.Domain.Models;
 using Core.Modules.TLEData.Infrastructure.HttpClients;
 using System;

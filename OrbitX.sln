@@ -1,13 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36811.4 d17.14
+VisualStudioVersion = 17.14.36811.4
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrbitX", "OrbitX\OrbitX.csproj", "{747DB57C-1F07-40A2-8077-16904DAF125D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "Core\Core.csproj", "{28D2A9C4-B2FE-42FC-A6A7-76100E3EA094}"
 EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{81DDED9D-158B-E303-5F62-77A2896D2A5A}"
+EndProject
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "orbitx.frontend", "OrbitX.Frontend\orbitx.frontend.esproj", "{E6699BB3-3E63-A61F-78A5-838CEF4D8B3B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +29,12 @@ Global
 		{81DDED9D-158B-E303-5F62-77A2896D2A5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{81DDED9D-158B-E303-5F62-77A2896D2A5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{81DDED9D-158B-E303-5F62-77A2896D2A5A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E6699BB3-3E63-A61F-78A5-838CEF4D8B3B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E6699BB3-3E63-A61F-78A5-838CEF4D8B3B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E6699BB3-3E63-A61F-78A5-838CEF4D8B3B}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{E6699BB3-3E63-A61F-78A5-838CEF4D8B3B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E6699BB3-3E63-A61F-78A5-838CEF4D8B3B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E6699BB3-3E63-A61F-78A5-838CEF4D8B3B}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Core.Modules.TLEData.Domain.Interfaces.Services
+namespace Core.Modules.TLEData.Application.Interfaces
 {
     public interface ISatellitesService
     {

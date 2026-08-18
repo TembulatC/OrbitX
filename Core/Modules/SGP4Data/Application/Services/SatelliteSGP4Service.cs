@@ -1,7 +1,6 @@
 ﻿using Core.Modules.SGP4Data.Application.DTOs;
 using Core.Modules.SGP4Data.Application.Interfaces;
-using Core.Modules.SGP4Data.Domain.Interfaces.Repositories;
-using Core.Modules.SGP4Data.Domain.Interfaces.Services;
+using Core.Modules.SGP4Data.Domain.Interfaces;
 using Core.Modules.SGP4Data.Domain.Models;
 using Core.Modules.TLEData.Domain.Models;
 using SGPdotNET.CoordinateSystem;
@@ -16,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace Core.Modules.SGP4Data.Application.Services
 {
-    public class SatelliteSGP4Service : ISatelliteSGPServices, ISGP
+    public class SatelliteSGP4Service : ISatelliteSGPServices
     {
         private readonly ISatelliteSGPRepository _satelliteSGPRepository;
 
@@ -25,27 +24,9 @@ namespace Core.Modules.SGP4Data.Application.Services
             _satelliteSGPRepository = satelliteSGPRepository;
         }
 
-        public async Task<SatelliteTLE?> GetSGPByID(int noradId)
+        public async Task<SGP4DataDTO> GetSGPByID(int noradId)
         {
-            var satellite = await _satelliteSGPRepository.GetTLEByID(noradId);
-
-            if (satellite == null) return null;
-
-            return satellite;
-        }
-
-        public async Task<SatelliteTLE?> GetSGPByName(string satelliteName)
-        {
-            var satellite = await _satelliteSGPRepository.GetTLEByName(satelliteName);
-
-            if (satellite == null) return null;
-
-            return satellite;
-        }
-
-        public async Task<SGP4DataDTO> GetSGP(int noradId)
-        {
-            var satelliteData = await GetSGPByID(noradId);
+            var satelliteData = await _satelliteSGPRepository.GetTLEByID(noradId);
             if (satelliteData == null) return null; // Безопасный выход!
 
             var tle = new Tle(satelliteData.Name, satelliteData.TLELine1, satelliteData.TLELine2); // Инициализируем объекты TLE для движка SGP4          
@@ -72,9 +53,9 @@ namespace Core.Modules.SGP4Data.Application.Services
             return sGP4DataDTO;
         }
 
-        public async Task<SGP4DataDTO> GetSGP(string satelliteName)
+        public async Task<SGP4DataDTO> GetSGPByName(string satelliteName)
         {
-            var satelliteData = await GetSGPByName(satelliteName);
+            var satelliteData = await _satelliteSGPRepository.GetTLEByName(satelliteName);
             if (satelliteData == null) return null; // Безопасный выход!
 
             var tle = new Tle(satelliteData.Name, satelliteData.TLELine1, satelliteData.TLELine2); // Инициализируем объекты TLE для движка SGP4          

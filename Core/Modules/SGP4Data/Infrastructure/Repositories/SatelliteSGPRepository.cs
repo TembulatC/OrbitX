@@ -1,4 +1,4 @@
-﻿using Core.Modules.SGP4Data.Domain.Interfaces.Repositories;
+﻿using Core.Modules.SGP4Data.Domain.Interfaces;
 using Core.Modules.SGP4Data.Domain.Models;
 using Core.Modules.SGP4Data.Infrastructure.DBContext;
 using Microsoft.EntityFrameworkCore;

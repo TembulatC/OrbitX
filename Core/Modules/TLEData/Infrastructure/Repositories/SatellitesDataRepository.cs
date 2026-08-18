@@ -1,4 +1,4 @@
-﻿using Core.Modules.TLEData.Domain.Interfaces.Repositories;
+﻿using Core.Modules.TLEData.Domain.Interfaces;
 using Core.Modules.TLEData.Domain.Models;
 using Core.Modules.TLEData.Infrastructure.DBContext;
 using Microsoft.EntityFrameworkCore;

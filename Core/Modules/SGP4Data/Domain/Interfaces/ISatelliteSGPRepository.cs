@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Core.Modules.SGP4Data.Domain.Interfaces.Repositories
+namespace Core.Modules.SGP4Data.Domain.Interfaces
 {
     public interface ISatelliteSGPRepository
     {

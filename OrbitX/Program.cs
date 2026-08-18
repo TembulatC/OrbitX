@@ -1,16 +1,17 @@
 using Core.Modules.SGP4Data.Application.Interfaces;
 using Core.Modules.SGP4Data.Application.Services;
-using Core.Modules.SGP4Data.Domain.Interfaces.Repositories;
-using Core.Modules.SGP4Data.Domain.Interfaces.Services;
+using Core.Modules.SGP4Data.Domain.Interfaces;
 using Core.Modules.SGP4Data.Infrastructure.DBContext;
 using Core.Modules.SGP4Data.Infrastructure.Repositories;
+using Core.Modules.TLEData.Application.Interfaces;
 using Core.Modules.TLEData.Application.Services;
-using Core.Modules.TLEData.Domain.Interfaces.Repositories;
-using Core.Modules.TLEData.Domain.Interfaces.Services;
+using Core.Modules.TLEData.Domain.Interfaces;
 using Core.Modules.TLEData.Infrastructure.DBContext;
 using Core.Modules.TLEData.Infrastructure.HttpClients;
 using Core.Modules.TLEData.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
+using OrbitX.BackgroundWorkers;
+using OrbitX.SignalRHubs;
 
 namespace OrbitX
 {
@@ -41,7 +42,15 @@ namespace OrbitX
             // Добавление сервисов и репозиториев для модуля SGP4
             builder.Services.AddScoped<ISatelliteSGPRepository, SatelliteSGPRepository>();
             builder.Services.AddScoped<ISatelliteSGPServices, SatelliteSGP4Service>();
-            builder.Services.AddScoped<ISGP, SatelliteSGP4Service>();
+
+            // Регистрируем сам класс воркера как Singleton, чтобы DI мог найти его для конструктора Хаба
+            builder.Services.AddSingleton<SatelliteBackgroundWorker>();
+            // Говорим .NET Core использовать этот же самый Singleton-экземпляр в качестве фонового Hosted-сервиса
+            builder.Services.AddHostedService<SatelliteBackgroundWorker>(provider =>
+                provider.GetRequiredService<SatelliteBackgroundWorker>());
+
+            // Добавляем инфраструктуру веб-сокетов SignalR
+            builder.Services.AddSignalR();
 
             var app = builder.Build();
 
@@ -70,6 +79,9 @@ namespace OrbitX
 
 
             app.MapControllers();
+
+            // Выделяем адрес для SignalR
+            app.MapHub<SignalRHub>("/ws/satellite");
 
             app.Run();
         }

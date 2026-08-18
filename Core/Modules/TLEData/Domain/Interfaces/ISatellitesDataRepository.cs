@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Core.Modules.TLEData.Domain.Interfaces.Repositories
+namespace Core.Modules.TLEData.Domain.Interfaces
 {
     public interface ISatellitesDataRepository
     {
