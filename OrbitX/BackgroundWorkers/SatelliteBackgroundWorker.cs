@@ -1,6 +1,7 @@
 ﻿
 using Core.Modules.SGP4Data.Application.Interfaces;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using OrbitX.SignalRHubs;
 using System.Collections.Concurrent;
 
@@ -11,7 +12,7 @@ namespace OrbitX.BackgroundWorkers
         // Вызов провайдера для Scoped
         private readonly IServiceProvider _serviceProvider;
         // Адресная книга. ID спутника -> Токен отмены его потока данных
-        private static readonly ConcurrentDictionary<int, CancellationTokenSource> _satelliteThreads = new();
+        private static readonly ConcurrentDictionary<int, (CancellationTokenSource cts, int counter)> _satelliteThreads = new();
         // Связываем с SignalR
         private readonly IHubContext<SignalRHub> _hubContext;
         // Логгер
@@ -34,28 +35,77 @@ namespace OrbitX.BackgroundWorkers
             // Поток умрет или при вызове OnSatelliteUnwatched, или при выключении всего сервера
             var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_serverStoppingToken);
 
-            if (_satelliteThreads.TryAdd(noradId, linkedCts))
-            {
-                _logger.LogInformation($"Инициализация стриминга данных для спутника: {noradId}");
+            // Флаг, чтобы запустить поток только в случае реального ДОБАВЛЕНИЯ нового спутника
+            bool isNewSatelliteAdded = false;
 
-                // Запускаем единожды независимый поток расчета
+            _satelliteThreads.AddOrUpdate(  
+                noradId,
+                (key) => 
+                {
+                    isNewSatelliteAdded = true;
+                    return (linkedCts, 1); // Записываем токен и ставим счетчик в 1
+                },
+    
+                (key, oldValue) => 
+                {
+                    // Спутник уже стримит данные в другом потоке. Новый токен не нужен — уничтожаем его.
+                    linkedCts.Dispose();
+                    // Возвращаем старый токен, но счетчик увеличиваем на 1
+                    return (oldValue.cts, oldValue.counter + 1);
+                }
+            );
+
+            // Запускаем независимый поток расчета ТОЛЬКО если это был первый запуск для этого noradId
+            if (isNewSatelliteAdded)
+            {
+                _logger.LogInformation($"Инициализация сокета для спутника: {noradId}");
+
                 _ = Task.Run(() => StartSatelliteStreamingThread(noradId, linkedCts.Token), linkedCts.Token);
             }
             else
             {
-                // Если спутник уже есть и его поток активен, удаляем новый токен и оставляем тот же
-                linkedCts.Dispose();
+                _logger.LogInformation($"К сокету спутника {noradId} подключился новый пользователь");
             }
         }
 
         // Метод вызывается из SignalR при отключении
         public void OnSatelliteUnwatched(int noradId)
         {
-            // Если мы явно шлем сигнал, что сокетов больше нет, вытаскиваем токен из адресной книги и удаляем поток
-            if (_satelliteThreads.TryRemove(noradId, out var linkedCts))
+            // Если этого спутника по какой-то причине нет в словаре — сразу выходим
+            if (!_satelliteThreads.ContainsKey(noradId)) return;
+
+            CancellationTokenSource? ctsToKill = null;
+
+            _satelliteThreads.AddOrUpdate(
+                noradId,
+                // На случай непредвиденных сбоев
+                (key) => (CancellationTokenSource.CreateLinkedTokenSource(_serverStoppingToken), 0),
+
+                (key, oldValue) =>
+                {
+                    int updatedUserCount = Math.Max(0, oldValue.counter - 1);
+                    _logger.LogWarning($"[Worker] Пользователь покинул спутник {key}. Осталось людей в потоке: {updatedUserCount}");
+
+                    // Если на спутнике больше никого не осталось — готовим поток к уничтожению
+                    if (updatedUserCount == 0)
+                    {
+                        ctsToKill = oldValue.cts;
+                    }
+
+                    return (oldValue.cts, updatedUserCount);
+                }
+            );
+
+            if (ctsToKill != null)
             {
-                linkedCts.Cancel();
-                linkedCts.Dispose();
+                // Удаляем запись из адресной книги, чтобы освободить место
+                if (_satelliteThreads.TryRemove(noradId, out _))
+                {
+                    _logger.LogCritical($"[Worker]: На спутнике {noradId} осталось 0 пользователей. Поток расчетов удален.");
+
+                    ctsToKill.Cancel(); // Мгновенно останавливаем бесконечный цикл внутри StartSatelliteStreamingThread
+                    ctsToKill.Dispose(); // Чистим системные ресурсы токена
+                }
             }
         }
 
@@ -83,7 +133,7 @@ namespace OrbitX.BackgroundWorkers
         // ИЗОЛИРОВАННЫЙ, ПАРАЛЛЕЛЬНЫЙ ПОТОК РАСЧЕТА ДЛЯ КОНКРЕТНОГО ID СПУТНИКА
         private async Task StartSatelliteStreamingThread(int noradId, CancellationToken token)
         {
-            _logger.LogInformation($"[Thread Engine] Запущен кастомный параллельный поток для спутника ID: {noradId}");
+            _logger.LogInformation($"[Thread Engine] Запущен поток для спутника ID: {noradId}");
 
             // Бесконечный цикл
             while (!token.IsCancellationRequested)
@@ -113,8 +163,6 @@ namespace OrbitX.BackgroundWorkers
                 // Обновление каждую секунду
                 await Task.Delay(1000, token);
             }
-
-            _logger.LogInformation($"[Thread Engine] Поток для спутника ID: {noradId} успешно удален и стерт из памяти.");
         }
     }
 }

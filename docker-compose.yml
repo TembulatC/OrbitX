@@ -4,6 +4,10 @@ services:
     build:
       context: .
       dockerfile: OrbitX/Dockerfile
+    ports:
+      - "5000:8080"
+    networks:
+      - orbitx-network
     env_file:
       - .env
     environment:
@@ -16,6 +20,8 @@ services:
     image: postgres:15-alpine
     container_name: orbitx-db
     restart: always
+    networks:
+    - orbitx-network
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -25,5 +31,19 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  orbitx.frontend:
+    image: ${DOCKER_REGISTRY-}orbitx-frontend
+    build:
+      context: .
+      dockerfile: orbitx.frontend/Dockerfile
+    ports:
+      - "4000:80" 
+    networks:
+      - orbitx-network
+
 volumes:
   postgres_data:
+  
+networks:
+  orbitx-network:
+    driver: bridge

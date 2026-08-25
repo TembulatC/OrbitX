@@ -80,6 +80,13 @@ namespace OrbitX
 
             app.MapControllers();
 
+            app.UseCors(builder => builder
+                .WithOrigins("http://localhost:4000") // Порт фронтенда
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials()); // Этот флаг для сокетов SignalR
+
+
             // Выделяем адрес для SignalR
             app.MapHub<SignalRHub>("/ws/satellite");
 

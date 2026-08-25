@@ -21,32 +21,32 @@ namespace OrbitX.SignalRHubs
             await Groups.AddToGroupAsync(Context.ConnectionId, $"Satellite_{noradId}");
             _logger.LogInformation($"[SignalR] Пользователь {Context.ConnectionId} подключился к группе спутника - {noradId}");
 
+            // Кладем ID спутника в словарь текущего соединения
+            Context.Items["ActiveSatelliteId"] = noradId;
+
             // Сигнализируем нашему фоновому воркеру, чтобы он проверил/запустил поток расчета
             _worker.OnSatelliteWatched(noradId);
-        }
-
-        // Этот метод вызовет фронтенд, когда пользователь переключится на другой спутник или уйдет со страницы
-        public async Task UnwatchSatellite(int noradId)
-        {
-            // Убираем сокет из группы
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"Satellite_{noradId}");
-            _logger.LogInformation($"[SignalR] Пользователь {Context.ConnectionId} покинул группу спутника - {noradId}");
-
-            // Сигнализируем воркеру, чтобы он проверил, не пора ли тушить параллельный поток
-            _worker.OnSatelliteUnwatched(noradId);
         }
 
         // Вызывается автоматически, когда сокет пользователя успешно открылся
         public override async Task OnConnectedAsync()
         {
-            _logger.LogInformation($"[SignalR] Новое соединение установлено. ConnectionId: {Context.ConnectionId}");
             await base.OnConnectedAsync();
         }
 
         // Вызывается автоматически, когда вкладка закрыта или оборвался интернет
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            _logger.LogInformation($"[SignalR] Соединение закрыто. ConnectionId: {Context.ConnectionId}. Причина: {exception?.Message ?? "Плановый выход"}");
+            if (Context.Items.TryGetValue("ActiveSatelliteId", out var cachedId) && cachedId is int noradId)
+            {
+                // Убираем сокет из группы
+                await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"Satellite_{noradId}");
+                _logger.LogInformation($"[SignalR] Пользователь {Context.ConnectionId} покинул группу спутника - {noradId}");
+
+                // Сигнализируем воркеру, чтобы он проверил, не пора ли тушить параллельный поток
+                _worker.OnSatelliteUnwatched(noradId);
+            }
+
             await base.OnDisconnectedAsync(exception);
         }
     }

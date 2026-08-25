@@ -11,7 +11,6 @@ namespace Core.Modules.SGP4Data.Application.Interfaces
     public interface ISatelliteSGPServices
     {
         Task<SGP4DataDTO?> GetSGPByID(int noradId);
-
         Task<SGP4DataDTO?> GetSGPByName(string satelliteName);
     }
 }
