@@ -2,23 +2,19 @@
 using Core.Modules.SGP4Data.Application.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using OrbitX.BackgroundWorkers.Helper;
 using OrbitX.SignalRHubs;
 using System.Collections.Concurrent;
 
 namespace OrbitX.BackgroundWorkers
 {
     public class SatelliteBackgroundWorker : BackgroundService
-    {
-        // Вызов провайдера для Scoped
-        private readonly IServiceProvider _serviceProvider;
-        // Адресная книга. ID спутника -> Токен отмены его потока данных
-        private static readonly ConcurrentDictionary<int, (CancellationTokenSource cts, int counter)> _satelliteThreads = new();
-        // Связываем с SignalR
-        private readonly IHubContext<SignalRHub> _hubContext;
-        // Логгер
-        private readonly ILogger<SatelliteBackgroundWorker> _logger;
-        // Ссылка на токен остановки всего сервера
-        private CancellationToken _serverStoppingToken;
+    {      
+        private readonly IServiceProvider _serviceProvider; // Вызов провайдера для Scoped
+        private static readonly ConcurrentDictionary<int, (CancellationTokenSource cts, int counter)> _satelliteThreads = new(); // Адресная книга. ID спутника -> Токен отмены его потока данных
+        private readonly IHubContext<SignalRHub> _hubContext; // Связываем с SignalR      
+        private readonly ILogger<SatelliteBackgroundWorker> _logger; // Логгер
+        private CancellationToken _serverStoppingToken; // Ссылка на токен остановки всего сервера
 
         // Внедряем логгер для отслеживания тактов в консоли
         public SatelliteBackgroundWorker(ILogger<SatelliteBackgroundWorker> logger, IHubContext<SignalRHub> hubContext, IServiceProvider serviceProvider)
@@ -112,15 +108,27 @@ namespace OrbitX.BackgroundWorkers
         // Главный бесконечный цикл фонового процесса. Вызывается один раз при старте сервера
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            // Запоминаем токен сервера, чтобы связывать его с токенами спутников
-            _serverStoppingToken = stoppingToken;
-
             _logger.LogInformation("=== Фоновый воркер OrbitX успешно запущен ===");
 
-            // Просто держим воркер живым, пока сервер работает.
+            // Запоминаем токен сервера, чтобы связывать его с токенами спутников
+            _serverStoppingToken = stoppingToken;
+            // Цикл каждые 6 часов
+            using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromHours(6));
+
+            // Цикл получения и обновления данных
             try
             {
-                await Task.Delay(Timeout.Infinite, stoppingToken);
+                while (await timer.WaitForNextTickAsync(stoppingToken))
+                {
+                    // Создаем стерильную Scoped-область
+                    using (var scope = _serviceProvider.CreateScope())
+                    {
+                        stoppingToken.ThrowIfCancellationRequested();
+                        
+                        var downloaderTLE = scope.ServiceProvider.GetRequiredService<SatelliteTLEDownloader>();
+                        await downloaderTLE.GetTLEData(stoppingToken);
+                    }
+                }
             }
             catch (OperationCanceledException)
             {

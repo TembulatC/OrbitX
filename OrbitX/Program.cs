@@ -11,6 +11,7 @@ using Core.Modules.TLEData.Infrastructure.HttpClients;
 using Core.Modules.TLEData.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using OrbitX.BackgroundWorkers;
+using OrbitX.BackgroundWorkers.Helper;
 using OrbitX.SignalRHubs;
 
 namespace OrbitX
@@ -45,6 +46,8 @@ namespace OrbitX
 
             // Регистрируем сам класс воркера как Singleton, чтобы DI мог найти его для конструктора Хаба
             builder.Services.AddSingleton<SatelliteBackgroundWorker>();
+            // Класс для загрузки спутников всех категорий в бд через воркер
+            builder.Services.AddScoped<SatelliteTLEDownloader>();
             // Говорим .NET Core использовать этот же самый Singleton-экземпляр в качестве фонового Hosted-сервиса
             builder.Services.AddHostedService<SatelliteBackgroundWorker>(provider =>
                 provider.GetRequiredService<SatelliteBackgroundWorker>());

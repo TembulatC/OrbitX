@@ -10,5 +10,7 @@ namespace Core.Modules.TLEData.Domain.Interfaces
     public interface ISatellitesDataRepository
     {
         Task AddTLEData(List<Satellite> tle, string satellitesCategory);
+        Task AddTLEData(List<Satellite> tle, string satellitesCategory, CancellationToken cancellationToken);
+
     }
 }

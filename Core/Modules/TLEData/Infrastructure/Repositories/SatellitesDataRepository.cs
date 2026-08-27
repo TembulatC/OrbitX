@@ -21,10 +21,7 @@ namespace Core.Modules.TLEData.Infrastructure.Repositories
 
         public async Task AddTLEData(List<Satellite> tle, string satellitesCategory)
         {
-            // Поиск по категории одним запросом
-            // База найдет их по индексу за долю миллисекунды и выдаст пачкой
             var existingSatellites = await _dbContext.Satellites
-                .Where(s => s.Category == satellitesCategory)
                 .ToDictionaryAsync(s => s.NoradId); // Переводим в Dictionary для быстрого поиска
 
             foreach (Satellite satelliteTle in tle)
@@ -32,23 +29,50 @@ namespace Core.Modules.TLEData.Infrastructure.Repositories
                 // Ищем в памяти по ID
                 if (existingSatellites.TryGetValue(satelliteTle.NoradId, out var existing))
                 {
-                    // Спутник найден в этой категории — обновляем свойства
+                    // Спутник найден — обновляем свойства
                     existing.Name = satelliteTle.Name;
                     existing.TLELine1 = satelliteTle.TLELine1;
                     existing.TLELine2 = satelliteTle.TLELine2;
                     existing.Epoch = satelliteTle.Epoch;
                     existing.UpdatedAt = satelliteTle.UpdatedAt;
+                    existing.Category = satelliteTle.Category;
                 }
                 else
                 {
-                    // Новая запись — готовим к добавлению
-                    satelliteTle.Category = satellitesCategory;
                     _dbContext.Satellites.Add(satelliteTle);
                 }
             }
 
             // Сохраняем всё одним мощным батчем
             await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task AddTLEData(List<Satellite> tle, string satellitesCategory, CancellationToken cancellationToken)
+        {
+            var existingSatellites = await _dbContext.Satellites
+                .ToDictionaryAsync(s => s.NoradId); // Переводим в Dictionary для быстрого поиска
+
+            foreach (Satellite satelliteTle in tle)
+            {
+                // Ищем в памяти по ID
+                if (existingSatellites.TryGetValue(satelliteTle.NoradId, out var existing))
+                {
+                    // Спутник найден — обновляем свойства
+                    existing.Name = satelliteTle.Name;
+                    existing.TLELine1 = satelliteTle.TLELine1;
+                    existing.TLELine2 = satelliteTle.TLELine2;
+                    existing.Epoch = satelliteTle.Epoch;
+                    existing.UpdatedAt = satelliteTle.UpdatedAt;
+                    existing.Category = satelliteTle.Category;
+                }
+                else
+                {
+                    _dbContext.Satellites.Add(satelliteTle);
+                }
+            }
+
+            // Сохраняем всё одним мощным батчем
+            await _dbContext.SaveChangesAsync(cancellationToken);
         }
     }
 }
