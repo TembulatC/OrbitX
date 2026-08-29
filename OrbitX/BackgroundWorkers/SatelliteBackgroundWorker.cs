@@ -1,7 +1,5 @@
-﻿
-using Core.Modules.SGP4Data.Application.Interfaces;
+﻿using Core.Modules.SGP4Data.Application.Interfaces;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using OrbitX.BackgroundWorkers.Helper;
 using OrbitX.SignalRHubs;
 using System.Collections.Concurrent;

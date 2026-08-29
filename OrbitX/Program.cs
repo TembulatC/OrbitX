@@ -13,6 +13,8 @@ using Microsoft.EntityFrameworkCore;
 using OrbitX.BackgroundWorkers;
 using OrbitX.BackgroundWorkers.Helper;
 using OrbitX.SignalRHubs;
+using Serilog;
+using Serilog.Sinks.SystemConsole.Themes;
 
 namespace OrbitX
 {
@@ -21,6 +23,31 @@ namespace OrbitX
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            var customTheme = new AnsiConsoleTheme(new Dictionary<ConsoleThemeStyle, string>
+            {
+                [ConsoleThemeStyle.Text] = "\x1b[37m",             // Обычный текст - белый
+                [ConsoleThemeStyle.SecondaryText] = "\x1b[90m",    // Скобочки и контекст - серый
+
+                [ConsoleThemeStyle.LevelInformation] = "\x1b[36m", // INFO - Cyan (Голубой)
+                [ConsoleThemeStyle.LevelWarning] = "\x1b[33m",     // WARN - Желтый
+                [ConsoleThemeStyle.LevelError] = "\x1b[31m",       // ERRR - Красный
+                [ConsoleThemeStyle.LevelFatal] = "\x1b[35m"        // FTAL - Пурпурный
+            });
+
+            Log.Logger = new LoggerConfiguration()
+                 .ReadFrom.Configuration(builder.Configuration)
+                 .WriteTo.Console(
+                    theme: customTheme, 
+                    outputTemplate: "[{Timestamp:HH:mm:ss}] [{Level:u4}] [{SourceContext}] {Message:lj}{NewLine}{Exception}",
+                    applyThemeToRedirectedOutput: true
+                 )
+                 .CreateLogger();
+
+            Log.Information("Start OrbitX");
+
+            // Передаем управление логированием хоста в руки Serilog
+            builder.Host.UseSerilog();
 
             // Подключение PostgreSQL
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -39,6 +66,7 @@ namespace OrbitX
             // Добавление сервисов и репозиториев для модуля TLEData
             builder.Services.AddScoped<ISatellitesDataRepository, SatellitesDataRepository>();
             builder.Services.AddScoped<ISatellitesService, SatellitesDataService>();
+            builder.Services.AddSingleton<SatellitesParserService>();
 
             // Добавление сервисов и репозиториев для модуля SGP4
             builder.Services.AddScoped<ISatelliteSGPRepository, SatelliteSGPRepository>();
@@ -61,7 +89,6 @@ namespace OrbitX
             using (var scope = app.Services.CreateScope())
             {
                 var services = scope.ServiceProvider;
-
                 var context = services.GetRequiredService<TLEDBContext>();
 
                 // Эта команда смотрит на папку Migrations в Core 
@@ -77,10 +104,7 @@ namespace OrbitX
             }
 
             app.UseHttpsRedirection();
-
             app.UseAuthorization();
-
-
             app.MapControllers();
 
             app.UseCors(builder => builder
@@ -88,7 +112,6 @@ namespace OrbitX
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials()); // Этот флаг для сокетов SignalR
-
 
             // Выделяем адрес для SignalR
             app.MapHub<SignalRHub>("/ws/satellite");

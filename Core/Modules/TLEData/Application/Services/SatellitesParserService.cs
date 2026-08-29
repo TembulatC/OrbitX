@@ -1,4 +1,5 @@
 ﻿using Core.Modules.TLEData.Domain.Models;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,10 +8,25 @@ using System.Threading.Tasks;
 
 namespace Core.Modules.TLEData.Application.Services
 {
-    public static class SatellitesParserService
+    public class SatellitesParserService
     {
-        public static List<Satellite> Parse(string httpTLEstring, string satellitesCategory)
+        private readonly ILogger<SatellitesParserService> _logger;
+
+        public SatellitesParserService(ILogger<SatellitesParserService> logger)
         {
+            _logger = logger;
+        }
+
+        public List<Satellite> Parse(string httpTLEstring, string satellitesCategory)
+        {
+            _logger.LogInformation("Запуск парсера");
+
+            if (string.IsNullOrEmpty(httpTLEstring))
+            {
+                _logger.LogWarning("Отмена операции обработки парсером. Строка TLE данных пришла пустой");
+                return new List<Satellite>();
+            }
+
             // 1. Очищаем текст от \r и \n, убираем пустые строки
             string[] lines = httpTLEstring.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
 
@@ -39,7 +55,7 @@ namespace Core.Modules.TLEData.Application.Services
             return DataFormatting(tleLines, satellitesCategory);
         }
 
-        private static List<Satellite> DataFormatting(List<List<string>> tleLines, string satellitesCategory)
+        private List<Satellite> DataFormatting(List<List<string>> tleLines, string satellitesCategory)
         {
             List<Satellite> satellites = new List<Satellite>();
 
@@ -76,11 +92,12 @@ namespace Core.Modules.TLEData.Application.Services
 
                 else continue;
             }
-          
+
+            _logger.LogInformation("Данные спутников отформатированы");
             return satellites;
         }
 
-        private static DateTime DateFormatting(ReadOnlySpan<char> line1Span)
+        private DateTime DateFormatting(ReadOnlySpan<char> line1Span)
         {
             // Определяем полный год (граница 1957 год — запуск Первого ИСЗ)
             int year = int.Parse(line1Span.Slice(18, 2));
@@ -99,7 +116,7 @@ namespace Core.Modules.TLEData.Application.Services
         }
 
         // Подсчет контрольной суммы
-        private static bool CheckSum(List<string> tleLine)
+        private bool CheckSum(List<string> tleLine)
         {
             // 2 Tle строки
             int tleLine1Sum = 0;

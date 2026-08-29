@@ -11,6 +11,7 @@ namespace OrbitX.BackgroundWorkers.Helper
     {
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ISatellitesDataRepository _satellitesDataRepository;
+        private readonly SatellitesParserService _satellitesParserService;
         private readonly static string[] CelestrakCategories = new[]
         {
             "weather", "resource", "sar", "sarsat", "dmc", "tdrss", "argos",
@@ -22,10 +23,11 @@ namespace OrbitX.BackgroundWorkers.Helper
             "education", "military", "radar", "cubesat"
         };
 
-        public SatelliteTLEDownloader(IHttpClientFactory httpClientFactory, ISatellitesDataRepository satellitesDataRepository)
+        public SatelliteTLEDownloader(IHttpClientFactory httpClientFactory, ISatellitesDataRepository satellitesDataRepository, SatellitesParserService satellitesParserService)
         {
             _httpClientFactory = httpClientFactory;
             _satellitesDataRepository = satellitesDataRepository;
+            _satellitesParserService = satellitesParserService;
         }
 
         public async Task GetTLEData(CancellationToken cancellationToken)
@@ -47,7 +49,7 @@ namespace OrbitX.BackgroundWorkers.Helper
                     
                 string tle = await client.GetStringAsync(url, cancellationToken);
                 
-                await _satellitesDataRepository.AddTLEData(SatellitesParserService.Parse(tle, category), category, cancellationToken);
+                await _satellitesDataRepository.AddTLEData(_satellitesParserService.Parse(tle, category), category, cancellationToken);
             }
         }
     }
