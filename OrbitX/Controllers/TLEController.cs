@@ -7,7 +7,7 @@ namespace OrbitX.Controllers
 {
     [ApiController]
     [Route("api/v1")]
-    public class TLEController : ControllerBase
+    public partial class TLEController : ControllerBase
     {
         private readonly ISatellitesService _tLEDataService;
         private readonly ISatelliteSGPServices _satelliteSGPServices;
@@ -26,28 +26,28 @@ namespace OrbitX.Controllers
         [Route("[action]")]
         public async Task<IActionResult> AddTLEData(string satellitesCategory)
         {
-            _logger.LogInformation($"Запуск цикла обновления данных спутников категории - {satellitesCategory}");
+            LogLaunchAdd(satellitesCategory);
 
             if (string.IsNullOrWhiteSpace(satellitesCategory))
             {
-                _logger.LogWarning("Отмена операции. Передано пустое или некорректное имя категории спутников");
+                LogCancelOperation();
                 return BadRequest("Название категории спутников не может быть пустым");
             }
 
             await _tLEDataService.AddTLEData(satellitesCategory);
 
-            _logger.LogInformation("Результат цикла: Успех");
-            return Ok("Успех");
+            LogSuccessAdd();
+            return Ok();
         }
 
         [HttpGet("position-by-id/{noradId:int}")]
         public async Task<IActionResult> GetSGP4DataById(int noradId)
         {
-            _logger.LogInformation($"Запуск цикла получения данных о спутнике {noradId} на текущий момент");
+            LogLaunchGetById(noradId);
 
             if (noradId < 0)
             {
-                _logger.LogWarning("Отмена операции. Передан отрицательный NoradId");
+                LogCancelNegativeNumber();
                 return BadRequest("NoradId не может быть отрицательным");
             }
 
@@ -55,17 +55,34 @@ namespace OrbitX.Controllers
 
             if (satelliteSPG == null)
             {
+                LogCancelNullById();
                 return NotFound($"Данных о спутнике с ID {noradId} не существует либо произошел сбой в математических расчетах SGP4");
             }
-            
-            _logger.LogInformation("Результат цикла: Успех");
+
+            LogSuccessGetById();
             return Ok(satelliteSPG);
         }
 
         [HttpGet("position-by-name/{satelliteName}")]
         public async Task<IActionResult> GetSGP4DataByName(string satelliteName)
         {
+            LogLaunchGetByName(satelliteName);
+
+            if (string.IsNullOrWhiteSpace(satelliteName))
+            {
+                LogCancelOperationName();
+                return BadRequest("Имя спутника не может быть пустым");
+            }
+
             var satelliteSPG = await _satelliteSGPServices.GetSGPByName(satelliteName.ToUpper());
+
+            if (satelliteSPG == null)
+            {
+                LogCancelNullByName();
+                return NotFound($"Данных о спутнике {satelliteName} не существует либо произошел сбой в математических расчетах SGP4");
+            }
+
+            LogSuccessGetByName();
             return Ok(satelliteSPG);
         }
 

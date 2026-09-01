@@ -3,15 +3,10 @@ using Core.Modules.TLEData.Domain.Models;
 using Core.Modules.TLEData.Infrastructure.DBContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Core.Modules.TLEData.Infrastructure.Repositories
 {
-    public class SatellitesDataRepository : ISatellitesDataRepository
+    public partial class SatellitesDataRepository : ISatellitesDataRepository
     {
         private readonly TLEDBContext _dbContext;
         private readonly ILogger<SatellitesDataRepository> _logger;
@@ -24,11 +19,11 @@ namespace Core.Modules.TLEData.Infrastructure.Repositories
 
         public async Task AddTLEData(List<Satellite> tle, string satellitesCategory)
         {
-            _logger.LogInformation("Запуск добавления данных в базу данных");
+            LogLaunch();
 
             if (tle == null || tle.Count <= 0)
             {
-                _logger.LogWarning("Добавление данных отменено. Список спутников пришел пустым");
+                LogCancellationAddData();
                 return;
             }
 
@@ -56,7 +51,7 @@ namespace Core.Modules.TLEData.Infrastructure.Repositories
 
             // Сохраняем всё одним мощным батчем
             await _dbContext.SaveChangesAsync();
-            _logger.LogInformation("Данные по спутникам успешно обновлены");
+            LogUpdateData();
         }
 
         public async Task AddTLEData(List<Satellite> tle, string satellitesCategory, CancellationToken cancellationToken)

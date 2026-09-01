@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace Core.Modules.SGP4Data.Application.Services
 {
-    public class SatelliteSGP4Service : ISatelliteSGPServices
+    public partial class SatelliteSGP4Service : ISatelliteSGPServices
     {
         private readonly ISatelliteSGPRepository _satelliteSGPRepository;
         private readonly ILogger<SatelliteSGP4Service> _logger;
@@ -29,17 +29,23 @@ namespace Core.Modules.SGP4Data.Application.Services
 
         public async Task<SGP4DataDTO?> GetSGPByID(int noradId)
         {
-            _logger.LogInformation("Цикл запущен");
+            LogLaunchById();
+
+            if (noradId < 0)
+            {
+                LogCancelNegativeNumber();
+                return null;
+            }
 
             var satelliteData = await _satelliteSGPRepository.GetTLEByID(noradId);
 
             if (satelliteData == null)
             {
-                _logger.LogWarning($"Отмена цикла. Данные о спутнике с ID {noradId} не найдены");
+                LogCancelNull(noradId);
                 return null; // Безопасный выход!
             }
 
-            _logger.LogInformation("Обработка данных в SGP4 для получения координат спутника");
+            LogProcessSGP4ById();
 
             try
             {
@@ -64,20 +70,13 @@ namespace Core.Modules.SGP4Data.Application.Services
                     Altitude = geoPosition.Altitude,
                 };
 
-                _logger.LogInformation($"Данные спутника успешно получены:\n" +
-                    $"NoradId - {SGP4DataDTO.NoradId}\n" +
-                    $"Name - {SGP4DataDTO.Name}\n" +
-                    $"TLELine1 - {SGP4DataDTO.TLELine1}\n" +
-                    $"TLELine2 - {SGP4DataDTO.TLELine2}\n" +
-                    $"Longtitude - {SGP4DataDTO.Longitude}\n" +
-                    $"Latitude - {SGP4DataDTO.Latitude}\n" +
-                    $"Altitude - {SGP4DataDTO.Altitude}");
+                LogSGP4DtoById(SGP4DataDTO.NoradId, SGP4DataDTO.Name, SGP4DataDTO.TLELine1, SGP4DataDTO.TLELine2, SGP4DataDTO.Longitude, SGP4DataDTO.Latitude, SGP4DataDTO.Altitude);
 
                 return SGP4DataDTO;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Сбой математического расчета SGP4");
+                LogFailureById(ex);
                 return null;
             }
             
@@ -85,31 +84,57 @@ namespace Core.Modules.SGP4Data.Application.Services
 
         public async Task<SGP4DataDTO?> GetSGPByName(string satelliteName)
         {
-            var satelliteData = await _satelliteSGPRepository.GetTLEByName(satelliteName);
-            if (satelliteData == null) return null; // Безопасный выход!
+            LogLaunchByName();
 
-            var tle = new Tle(satelliteData.Name, satelliteData.TLELine1, satelliteData.TLELine2); // Инициализируем объекты TLE для движка SGP4          
-            var satellite = new SGPdotNET.Observation.Satellite(tle); // Инициализация спутника           
-
-            // Расчет позиции ECI на текущее время UTC
-            DateTime utcTime = DateTime.UtcNow;
-            EciCoordinate eci = satellite.Predict(utcTime);
-
-            // Переводим декартов вектор ECI в геодезические градусы геоида Земли WGS-84
-            GeodeticCoordinate geoPosition = eci.ToGeodetic();
-
-            SGP4DataDTO sGP4DataDTO = new SGP4DataDTO
+            if (string.IsNullOrEmpty(satelliteName))
             {
-                NoradId = satelliteData.NoradId,
-                Name = satelliteData.Name,
-                TLELine1 = satelliteData.TLELine1,
-                TLELine2 = satelliteData.TLELine2,
-                Longitude = geoPosition.Longitude.Degrees,
-                Latitude = geoPosition.Latitude.Degrees,
-                Altitude = geoPosition.Altitude,
-            };
+                LogCancelNameNull();
+                return null;
+            }
 
-            return sGP4DataDTO;
+            var satelliteData = await _satelliteSGPRepository.GetTLEByName(satelliteName);
+
+            if (satelliteData == null)
+            {
+                LogCancelNull(satelliteName);
+                return null; // Безопасный выход!
+            }
+
+            LogProcessSGP4ByName();
+
+            try
+            {
+                var tle = new Tle(satelliteData.Name, satelliteData.TLELine1, satelliteData.TLELine2); // Инициализируем объекты TLE для движка SGP4          
+                var satellite = new SGPdotNET.Observation.Satellite(tle); // Инициализация спутника           
+
+                // Расчет позиции ECI на текущее время UTC
+                DateTime utcTime = DateTime.UtcNow;
+                EciCoordinate eci = satellite.Predict(utcTime);
+
+                // Переводим декартов вектор ECI в геодезические градусы геоида Земли WGS-84
+                GeodeticCoordinate geoPosition = eci.ToGeodetic();
+
+                SGP4DataDTO SGP4DataDTO = new SGP4DataDTO
+                {
+                    NoradId = satelliteData.NoradId,
+                    Name = satelliteData.Name,
+                    TLELine1 = satelliteData.TLELine1,
+                    TLELine2 = satelliteData.TLELine2,
+                    Longitude = geoPosition.Longitude.Degrees,
+                    Latitude = geoPosition.Latitude.Degrees,
+                    Altitude = geoPosition.Altitude,
+                };
+
+                LogSGP4DtoByName(SGP4DataDTO.NoradId, SGP4DataDTO.Name, SGP4DataDTO.TLELine1, SGP4DataDTO.TLELine2, SGP4DataDTO.Longitude, SGP4DataDTO.Latitude, SGP4DataDTO.Altitude);
+
+                return SGP4DataDTO;
+            }
+            catch (Exception ex)
+            {
+                LogFailureByName(ex);
+                return null;
+            }
+            
         }
     }
 }

@@ -7,12 +7,12 @@ using System.Threading.Tasks;
 
 namespace Core.Modules.TLEData.Infrastructure.HttpClients
 {
-    public class HttpSatellitesData
+    public partial class HttpSatellitesData
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<HttpSatellitesData> _logger;
 
-        public HttpSatellitesData (HttpClient httpClient, ILogger<HttpSatellitesData> logger)
+        public HttpSatellitesData(HttpClient httpClient, ILogger<HttpSatellitesData> logger)
         {
             _httpClient = httpClient;
             _logger = logger;
@@ -20,14 +20,14 @@ namespace Core.Modules.TLEData.Infrastructure.HttpClients
 
         public async Task<string> GetTLEData(string satellitesCategory)
         {
-            _logger.LogInformation($"Создаем HTTP запрос для поиска спутников");
+            LogCreateHTTP();
 
             // Получаем TLE данные по определенной категории спутников
             string url = satellitesCategory == "gpz" || satellitesCategory == "gpz-plus"
                 ? $"https://celestrak.org/NORAD/elements/gp.php?SPECIAL={satellitesCategory}&FORMAT=tle"
                 : $"https://celestrak.org/NORAD/elements/gp.php?GROUP={satellitesCategory}&FORMAT=tle";
 
-            _logger.LogInformation($"URL запроса: {url}");
+            LogURL(url);
 
             try
             {
@@ -41,19 +41,19 @@ namespace Core.Modules.TLEData.Infrastructure.HttpClients
                     switch (statusCode)
                     {
                         case 403:
-                            _logger.LogError($"(HTTP {statusCode}) Доступ временно заблокирован из-за слишком частых запросов");
+                            Log403StatusCode(statusCode);
                             break;
                         case 404:
-                            _logger.LogWarning($"(HTTP {statusCode}) Страницы к которой был HTTP-запрос не существует");
+                            Log404StatusCode(statusCode);
                             break;
                         case 500:
-                            _logger.LogError($"(HTTP {statusCode}) На внешнем сревере запросов произошел сбой");
+                            Log500StatusCode(statusCode);
                             break;
                         case 503:
-                            _logger.LogWarning($"(HTTP {statusCode}) Внешний сервер запросов временно недоступен");
+                            Log503StatusCode(statusCode);
                             break;
                         default:
-                            _logger.LogError($"(HTTP {statusCode}) Сетевой запрос завершился с неизвестной ошибкой: {response.ReasonPhrase}");
+                            LogUnknownError(statusCode, response.ReasonPhrase);
                             break;
                     }
 
@@ -64,21 +64,26 @@ namespace Core.Modules.TLEData.Infrastructure.HttpClients
 
                 if (string.IsNullOrWhiteSpace(tle)) // Проверка на пустой контент
                 {
-                    _logger.LogWarning($"Тело HTTP-запроса пришло пустым");
+                    LogNullOrWhitSpace();
+                    return string.Empty;
+                }
+                else if (tle.Contains("invalid", StringComparison.OrdinalIgnoreCase) || tle.Contains("error", StringComparison.OrdinalIgnoreCase))
+                {
+                    LogInvalid();
                     return string.Empty;
                 }
 
-                _logger.LogInformation($"HTTP-запрос был завершен успешно");
+                LogSuccessful();
                 return tle;
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError(ex, $"Неизвестная сетевая ошибка при HTTP-запросе");
+                LogUnknownHttpError(ex);
                 return string.Empty;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Неизвестная ошибка при HTTP-запросе");
+                LogOtherError(ex);
                 return string.Empty;
             }
         }

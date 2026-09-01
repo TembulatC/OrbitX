@@ -18,6 +18,7 @@
     <Folder Include="Modules\GeoTracking\Domain\Models\" />
     <Folder Include="Modules\GeoTracking\Domain\Intefaces\" />
     <Folder Include="Modules\GeoTracking\Infrastructure\Repositories\" />
+    <Folder Include="Modules\SGP4Data\Infrastructure\Logging\" />
   </ItemGroup>
 
   <ItemGroup>

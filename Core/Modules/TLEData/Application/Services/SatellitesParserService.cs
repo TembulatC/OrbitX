@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Core.Modules.TLEData.Application.Services
 {
-    public class SatellitesParserService
+    public partial class SatellitesParserService
     {
         private readonly ILogger<SatellitesParserService> _logger;
 
@@ -19,11 +19,11 @@ namespace Core.Modules.TLEData.Application.Services
 
         public List<Satellite> Parse(string httpTLEstring, string satellitesCategory)
         {
-            _logger.LogInformation("Запуск парсера");
+            LogLaunch();
 
             if (string.IsNullOrEmpty(httpTLEstring))
             {
-                _logger.LogWarning("Отмена операции обработки парсером. Строка TLE данных пришла пустой");
+                LogCancellationParserProcessing();
                 return new List<Satellite>();
             }
 
@@ -93,7 +93,7 @@ namespace Core.Modules.TLEData.Application.Services
                 else continue;
             }
 
-            _logger.LogInformation("Данные спутников отформатированы");
+            LogParserFormatting();
             return satellites;
         }
 
