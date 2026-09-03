@@ -3,7 +3,7 @@ using OrbitX.BackgroundWorkers;
 
 namespace OrbitX.SignalRHubs
 {
-    public class SignalRHub : Hub
+    public partial class SignalRHub : Hub
     {
         private readonly ILogger<SignalRHub> _logger;
         private readonly SatelliteBackgroundWorker _worker;
@@ -19,7 +19,6 @@ namespace OrbitX.SignalRHubs
         {
             // Веерный пуш: Сажаем сокет пользователя в изолированную комнату (Группу) этого спутника
             await Groups.AddToGroupAsync(Context.ConnectionId, $"Satellite_{noradId}");
-            _logger.LogInformation($"[SignalR] Пользователь {Context.ConnectionId} подключился к группе спутника - {noradId}");
 
             // Кладем ID спутника в словарь текущего соединения
             Context.Items["ActiveSatelliteId"] = noradId;
@@ -37,11 +36,15 @@ namespace OrbitX.SignalRHubs
         // Вызывается автоматически, когда вкладка закрыта или оборвался интернет
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
+            if (exception != null)
+            {
+                LogClientAbruptDisconnect(Context.ConnectionId, exception.Message);
+            }
+
             if (Context.Items.TryGetValue("ActiveSatelliteId", out var cachedId) && cachedId is int noradId)
             {
                 // Убираем сокет из группы
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"Satellite_{noradId}");
-                _logger.LogInformation($"[SignalR] Пользователь {Context.ConnectionId} покинул группу спутника - {noradId}");
 
                 // Сигнализируем воркеру, чтобы он проверил, не пора ли тушить параллельный поток
                 _worker.OnSatelliteUnwatched(noradId);
