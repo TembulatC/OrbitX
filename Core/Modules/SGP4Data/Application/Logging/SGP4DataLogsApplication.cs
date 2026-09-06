@@ -41,12 +41,10 @@ namespace Core.Modules.SGP4Data.Application.Services
             Message = "Данные спутника:\n" +
                     "NoradId - {NoradId}\n" +
                     "Name - {Name}\n" +
-                    "TLELine1 - {TLELine1}\n" +
-                    "TLELine2 - {TLELine2}\n" +
                     "Longtitude - {Longitude}\n" +
                     "Latitude - {Latitude}\n" +
                     "Altitude - {Altitude}")]
-        private partial void LogSGP4DtoById(int noradId, string name, string tleLine1, string tleLine2, double longitude, double latitude, double altitude);
+        private partial void LogSGP4DtoById(int noradId, string name, double longitude, double latitude, double altitude);
 
         [LoggerMessage(
             EventId = 506,
@@ -88,12 +86,10 @@ namespace Core.Modules.SGP4Data.Application.Services
             Message = "Данные спутника:\n" +
                     "NoradId - {NoradId}\n" +
                     "Name - {Name}\n" +
-                    "TLELine1 - {TLELine1}\n" +
-                    "TLELine2 - {TLELine2}\n" +
                     "Longtitude - {Longitude}\n" +
                     "Latitude - {Latitude}\n" +
                     "Altitude - {Altitude}")]
-        private partial void LogSGP4DtoByName(int noradId, string name, string tleLine1, string tleLine2, double longitude, double latitude, double altitude);
+        private partial void LogSGP4DtoByName(int noradId, string name, double longitude, double latitude, double altitude);
 
         [LoggerMessage(
             EventId = 606,

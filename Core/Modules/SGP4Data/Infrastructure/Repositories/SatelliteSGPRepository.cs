@@ -45,7 +45,7 @@ namespace Core.Modules.SGP4Data.Infrastructure.Repositories
                 return null;
             }
 
-            var satelliteTLE = await _dbContext.SatellitesTLE.AsNoTracking().FirstOrDefaultAsync(s => s.Name == satelliteName);
+            var satelliteTLE = await _dbContext.SatellitesTLE.AsNoTracking().FirstOrDefaultAsync(s => s.OBJECT_NAME == satelliteName);
 
             if (satelliteTLE != null) LogSuccessByName();
             else LogNotFoundByName(satelliteName);

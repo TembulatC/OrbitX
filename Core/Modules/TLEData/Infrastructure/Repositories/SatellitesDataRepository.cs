@@ -17,40 +17,52 @@ namespace Core.Modules.TLEData.Infrastructure.Repositories
             _logger = logger;
         }
 
-        public async Task AddTLEData(List<Satellite> tle, string satellitesCategory)
+        public async Task AddTLEData(List<Satellite> omm, string satellitesCategory)
         {
             LogLaunch();
 
-            if (tle == null || tle.Count <= 0)
+            if (omm == null || omm.Count <= 0)
             {
                 LogCancellationAddData();
                 return;
             }
 
             // Берем ID только тех спутников, которые пришли в этой конкретной категории
-            var incomingIds = tle.Select(t => t.NoradId).ToList();
+            var incomingIds = omm.Select(t => t.NORAD_CAT_ID).ToList();
 
             // Тянем из базы ТОЛЬКО те спутники, которые мы хотим обновить
             var existingSatellites = await _dbContext.Satellites
-                .Where(s => incomingIds.Contains(s.NoradId))
-                .ToDictionaryAsync(s => s.NoradId); // Переводим в Dictionary для быстрого поиска
+                .Where(s => incomingIds.Contains(s.NORAD_CAT_ID))
+                .ToDictionaryAsync(s => s.NORAD_CAT_ID); // Переводим в Dictionary для быстрого поиска
 
-            foreach (Satellite satelliteTle in tle)
+            foreach (Satellite satelliteOmm in omm)
             {
                 // Ищем в памяти по ID
-                if (existingSatellites.TryGetValue(satelliteTle.NoradId, out var existing))
+                if (existingSatellites.TryGetValue(satelliteOmm.NORAD_CAT_ID, out var existing))
                 {
                     // Спутник найден — обновляем свойства
-                    existing.Name = satelliteTle.Name;
-                    existing.TLELine1 = satelliteTle.TLELine1;
-                    existing.TLELine2 = satelliteTle.TLELine2;
-                    existing.Epoch = satelliteTle.Epoch;
-                    existing.UpdatedAt = satelliteTle.UpdatedAt;
+                    existing.OBJECT_NAME = satelliteOmm.OBJECT_NAME;
+                    existing.OBJECT_ID = satelliteOmm.OBJECT_ID;
+                    existing.MEAN_MOTION = satelliteOmm.MEAN_MOTION;
+                    existing.ECCENTRICITY = satelliteOmm.ECCENTRICITY;
+                    existing.INCLINATION = satelliteOmm.INCLINATION;
+                    existing.RA_OF_ASC_NODE = satelliteOmm.RA_OF_ASC_NODE;
+                    existing.ARG_OF_PERICENTER = satelliteOmm.ARG_OF_PERICENTER;
+                    existing.MEAN_ANOMALY = satelliteOmm.MEAN_ANOMALY;
+                    existing.EPHEMERIS_TYPE = satelliteOmm.EPHEMERIS_TYPE;
+                    existing.CLASSIFICATION_TYPE = satelliteOmm.CLASSIFICATION_TYPE;
+                    existing.ELEMENT_SET_NO = satelliteOmm.ELEMENT_SET_NO;
+                    existing.REV_AT_EPOCH = satelliteOmm.REV_AT_EPOCH;
+                    existing.BSTAR = satelliteOmm.BSTAR;
+                    existing.MEAN_MOTION_DOT = satelliteOmm.MEAN_MOTION_DOT;
+                    existing.MEAN_MOTION_DDOT = satelliteOmm.MEAN_MOTION_DDOT;
+                    existing.EPOCH = satelliteOmm.EPOCH;
+                    existing.UpdatedAt = satelliteOmm.UpdatedAt;
                     existing.Category = satellitesCategory;
                 }
                 else
                 {
-                    _dbContext.Satellites.Add(satelliteTle);
+                    _dbContext.Satellites.Add(satelliteOmm);
                 }
             }
 
@@ -59,37 +71,49 @@ namespace Core.Modules.TLEData.Infrastructure.Repositories
             LogUpdateData();
         }
 
-        public async Task AddTLEData(List<Satellite> tle, string satellitesCategory, CancellationToken cancellationToken)
+        public async Task AddTLEData(List<Satellite> omm, string satellitesCategory, CancellationToken cancellationToken)
         {
-            if (tle == null || tle.Count <= 0)
+            if (omm == null || omm.Count <= 0)
             {
                 return;
             }
 
             // Берем ID только тех спутников, которые пришли в этой конкретной категории
-            var incomingIds = tle.Select(t => t.NoradId).ToList();
+            var incomingIds = omm.Select(t => t.NORAD_CAT_ID).ToList();
 
             // Тянем из базы ТОЛЬКО те спутники, которые мы хотим обновить
             var existingSatellites = await _dbContext.Satellites
-                .Where(s => incomingIds.Contains(s.NoradId))
-                .ToDictionaryAsync(s => s.NoradId, cancellationToken); // Переводим в Dictionary для быстрого поиска
+                .Where(s => incomingIds.Contains(s.NORAD_CAT_ID))
+                .ToDictionaryAsync(s => s.NORAD_CAT_ID, cancellationToken); // Переводим в Dictionary для быстрого поиска
 
-            foreach (Satellite satelliteTle in tle)
+            foreach (Satellite satelliteOmm in omm)
             {
                 // Ищем в памяти по ID
-                if (existingSatellites.TryGetValue(satelliteTle.NoradId, out var existing))
+                if (existingSatellites.TryGetValue(satelliteOmm.NORAD_CAT_ID, out var existing))
                 {
                     // Спутник найден — обновляем свойства
-                    existing.Name = satelliteTle.Name;
-                    existing.TLELine1 = satelliteTle.TLELine1;
-                    existing.TLELine2 = satelliteTle.TLELine2;
-                    existing.Epoch = satelliteTle.Epoch;
-                    existing.UpdatedAt = satelliteTle.UpdatedAt;
+                    existing.OBJECT_NAME = satelliteOmm.OBJECT_NAME;
+                    existing.OBJECT_ID = satelliteOmm.OBJECT_ID;
+                    existing.MEAN_MOTION = satelliteOmm.MEAN_MOTION;
+                    existing.ECCENTRICITY = satelliteOmm.ECCENTRICITY;
+                    existing.INCLINATION = satelliteOmm.INCLINATION;
+                    existing.RA_OF_ASC_NODE = satelliteOmm.RA_OF_ASC_NODE;
+                    existing.ARG_OF_PERICENTER = satelliteOmm.ARG_OF_PERICENTER;
+                    existing.MEAN_ANOMALY = satelliteOmm.MEAN_ANOMALY;
+                    existing.EPHEMERIS_TYPE = satelliteOmm.EPHEMERIS_TYPE;
+                    existing.CLASSIFICATION_TYPE = satelliteOmm.CLASSIFICATION_TYPE;
+                    existing.ELEMENT_SET_NO = satelliteOmm.ELEMENT_SET_NO;
+                    existing.REV_AT_EPOCH = satelliteOmm.REV_AT_EPOCH;
+                    existing.BSTAR = satelliteOmm.BSTAR;
+                    existing.MEAN_MOTION_DOT = satelliteOmm.MEAN_MOTION_DOT;
+                    existing.MEAN_MOTION_DDOT = satelliteOmm.MEAN_MOTION_DDOT;
+                    existing.EPOCH = satelliteOmm.EPOCH;
+                    existing.UpdatedAt = satelliteOmm.UpdatedAt;
                     existing.Category = satellitesCategory;
                 }
                 else
                 {
-                    _dbContext.Satellites.Add(satelliteTle);
+                    _dbContext.Satellites.Add(satelliteOmm);
                 }
             }
 

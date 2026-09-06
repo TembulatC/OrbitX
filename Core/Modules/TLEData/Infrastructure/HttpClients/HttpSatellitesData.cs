@@ -24,8 +24,8 @@ namespace Core.Modules.TLEData.Infrastructure.HttpClients
 
             // Получаем TLE данные по определенной категории спутников
             string url = satellitesCategory == "gpz" || satellitesCategory == "gpz-plus"
-                ? $"https://celestrak.org/NORAD/elements/gp.php?SPECIAL={satellitesCategory}&FORMAT=tle"
-                : $"https://celestrak.org/NORAD/elements/gp.php?GROUP={satellitesCategory}&FORMAT=tle";
+                ? $"https://celestrak.org/NORAD/elements/gp.php?SPECIAL={satellitesCategory}&FORMAT=csv"
+                : $"https://celestrak.org/NORAD/elements/gp.php?GROUP={satellitesCategory}&FORMAT=csv";
 
             LogURL(url);
 

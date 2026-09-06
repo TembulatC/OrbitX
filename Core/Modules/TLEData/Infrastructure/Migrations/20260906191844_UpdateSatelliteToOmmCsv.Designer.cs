@@ -3,6 +3,7 @@ using System;
 using Core.Modules.TLEData.Infrastructure.DBContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Core.Modules.TLEData.Domain.Infrastructure.Migrations
 {
     [DbContext(typeof(TLEDBContext))]
-    partial class TLEDBContextModelSnapshot : ModelSnapshot
+    [Migration("20260906191844_UpdateSatelliteToOmmCsv")]
+    partial class UpdateSatelliteToOmmCsv
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -65,8 +68,8 @@ namespace Core.Modules.TLEData.Domain.Infrastructure.Migrations
                     b.Property<double>("MEAN_MOTION")
                         .HasColumnType("double precision");
 
-                    b.Property<double>("MEAN_MOTION_DDOT")
-                        .HasColumnType("double precision");
+                    b.Property<int>("MEAN_MOTION_DDOT")
+                        .HasColumnType("integer");
 
                     b.Property<double>("MEAN_MOTION_DOT")
                         .HasColumnType("double precision");

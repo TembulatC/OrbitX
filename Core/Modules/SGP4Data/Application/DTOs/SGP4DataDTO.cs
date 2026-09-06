@@ -17,14 +17,6 @@ namespace Core.Modules.SGP4Data.Application.DTOs
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
 
-        // Первая TLE-строка
-        [JsonPropertyName("tleLine1")]
-        public string TLELine1 { get; set; } = string.Empty;
-
-        // Вторая TLE-строка
-        [JsonPropertyName("tleLine2")]
-        public string TLELine2 { get; set; } = string.Empty;
-
         // Долгота
         [JsonPropertyName("longitude")]
         public double Longitude { get; set; } = 0;

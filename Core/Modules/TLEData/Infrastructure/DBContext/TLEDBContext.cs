@@ -12,11 +12,7 @@ namespace Core.Modules.TLEData.Infrastructure.DBContext
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // Указываем NoradId как первичный ключ
-            modelBuilder.Entity<Satellite>().HasKey(s => s.NoradId);
-
-            // Ограничиваем длину TLE строк (стандарт ~70 символов)
-            modelBuilder.Entity<Satellite>().Property(s => s.TLELine1).HasMaxLength(70);
-            modelBuilder.Entity<Satellite>().Property(s => s.TLELine2).HasMaxLength(70);
+            modelBuilder.Entity<Satellite>().HasKey(s => s.NORAD_CAT_ID);
 
             // Индекс для быстрого поиска по категориям (SpaceX, Couper и т.д.)
             modelBuilder.Entity<Satellite>().HasIndex(s => s.Category);

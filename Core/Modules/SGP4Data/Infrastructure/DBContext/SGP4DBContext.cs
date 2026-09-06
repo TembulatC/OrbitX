@@ -21,7 +21,7 @@ namespace Core.Modules.SGP4Data.Infrastructure.DBContext
                 // Жёстко указываем имя таблицы, чтобы оба контекста смотрели в одно место!
                 entity.ToTable("Satellites");
 
-                entity.HasKey(s => s.NoradId);
+                entity.HasKey(s => s.NORAD_CAT_ID);
             });
 
             base.OnModelCreating(modelBuilder);

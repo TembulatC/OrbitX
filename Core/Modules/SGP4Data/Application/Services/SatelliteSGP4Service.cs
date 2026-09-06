@@ -3,7 +3,9 @@ using Core.Modules.SGP4Data.Application.Interfaces;
 using Core.Modules.SGP4Data.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 using SGPdotNET.CoordinateSystem;
+using SGPdotNET.Parsers;
 using SGPdotNET.TLE;
+using SGPdotNET.Observation;
 
 namespace Core.Modules.SGP4Data.Application.Services
 {
@@ -40,8 +42,34 @@ namespace Core.Modules.SGP4Data.Application.Services
 
             try
             {
-                var tle = new Tle(satelliteData.Name, satelliteData.TLELine1, satelliteData.TLELine2); // Инициализируем объекты TLE для движка SGP4          
-                var satellite = new SGPdotNET.Observation.Satellite(tle); // Инициализация спутника           
+                // Инициализируем объекты Omm для движка SGP4 
+                var omm = new OmmData
+                {
+                    OmmVersion = "2.0", // Дефолтный стандарт CCSDS OMM
+                    ObjectName = satelliteData.OBJECT_NAME,
+                    ObjectID = satelliteData.OBJECT_ID,
+                    NoradCatID = (uint)satelliteData.NORAD_CAT_ID, // Приводим int базы к uint библиотеки
+                    ClassificationType = satelliteData.CLASSIFICATION_TYPE,
+                    ElementSetNo = (uint)satelliteData.ELEMENT_SET_NO,
+                    Epoch = DateTime.SpecifyKind(satelliteData.EPOCH, DateTimeKind.Utc), // Указываем UTC
+                    MeanMotion = satelliteData.MEAN_MOTION,
+                    Eccentricity = satelliteData.ECCENTRICITY,
+                    Inclination = satelliteData.INCLINATION,
+                    RAOfAscNode = satelliteData.RA_OF_ASC_NODE,
+                    ArgOfPericenter = satelliteData.ARG_OF_PERICENTER,
+                    MeanAnomaly = satelliteData.MEAN_ANOMALY,
+                    EphemerisType = satelliteData.EPHEMERIS_TYPE,
+                    BStar = satelliteData.BSTAR,
+                    MeanMotionDot = satelliteData.MEAN_MOTION_DOT,
+                    MeanMotionDDot = satelliteData.MEAN_MOTION_DDOT,
+                    RevAtEpoch = (uint)satelliteData.REV_AT_EPOCH,
+                    CenterName = "EARTH",
+                    RefFrame = "TEME",
+                    TimeSystem = "UTC",
+                    MeanElementTheory = "SGP4"
+                };
+
+                var satellite = new Satellite(omm);
 
                 // Расчет позиции ECI на текущее время UTC
                 DateTime utcTime = DateTime.UtcNow;
@@ -52,16 +80,14 @@ namespace Core.Modules.SGP4Data.Application.Services
 
                 SGP4DataDTO SGP4DataDTO = new SGP4DataDTO
                 {
-                    NoradId = satelliteData.NoradId,
-                    Name = satelliteData.Name,
-                    TLELine1 = satelliteData.TLELine1,
-                    TLELine2 = satelliteData.TLELine2,
+                    NoradId = satelliteData.NORAD_CAT_ID,
+                    Name = satelliteData.OBJECT_NAME,
                     Longitude = geoPosition.Longitude.Degrees,
                     Latitude = geoPosition.Latitude.Degrees,
                     Altitude = geoPosition.Altitude,
                 };
 
-                LogSGP4DtoById(SGP4DataDTO.NoradId, SGP4DataDTO.Name, SGP4DataDTO.TLELine1, SGP4DataDTO.TLELine2, SGP4DataDTO.Longitude, SGP4DataDTO.Latitude, SGP4DataDTO.Altitude);
+                LogSGP4DtoById(SGP4DataDTO.NoradId, SGP4DataDTO.Name, SGP4DataDTO.Longitude, SGP4DataDTO.Latitude, SGP4DataDTO.Altitude);
 
                 return SGP4DataDTO;
             }
@@ -95,8 +121,34 @@ namespace Core.Modules.SGP4Data.Application.Services
 
             try
             {
-                var tle = new Tle(satelliteData.Name, satelliteData.TLELine1, satelliteData.TLELine2); // Инициализируем объекты TLE для движка SGP4          
-                var satellite = new SGPdotNET.Observation.Satellite(tle); // Инициализация спутника           
+                // Инициализируем объекты Omm для движка SGP4 
+                var omm = new OmmData
+                {
+                    OmmVersion = "2.0", // Дефолтный стандарт CCSDS OMM
+                    ObjectName = satelliteData.OBJECT_NAME,
+                    ObjectID = satelliteData.OBJECT_ID,
+                    NoradCatID = (uint)satelliteData.NORAD_CAT_ID, // Приводим int базы к uint библиотеки
+                    ClassificationType = satelliteData.CLASSIFICATION_TYPE,
+                    ElementSetNo = (uint)satelliteData.ELEMENT_SET_NO,
+                    Epoch = DateTime.SpecifyKind(satelliteData.EPOCH, DateTimeKind.Utc), // Указываем UTC
+                    MeanMotion = satelliteData.MEAN_MOTION,
+                    Eccentricity = satelliteData.ECCENTRICITY,
+                    Inclination = satelliteData.INCLINATION,
+                    RAOfAscNode = satelliteData.RA_OF_ASC_NODE,
+                    ArgOfPericenter = satelliteData.ARG_OF_PERICENTER,
+                    MeanAnomaly = satelliteData.MEAN_ANOMALY,
+                    EphemerisType = satelliteData.EPHEMERIS_TYPE,
+                    BStar = satelliteData.BSTAR,
+                    MeanMotionDot = satelliteData.MEAN_MOTION_DOT,
+                    MeanMotionDDot = satelliteData.MEAN_MOTION_DDOT,
+                    RevAtEpoch = (uint)satelliteData.REV_AT_EPOCH,
+                    CenterName = "EARTH",
+                    RefFrame = "TEME",
+                    TimeSystem = "UTC",
+                    MeanElementTheory = "SGP4"
+                };
+
+                var satellite = new Satellite(omm);
 
                 // Расчет позиции ECI на текущее время UTC
                 DateTime utcTime = DateTime.UtcNow;
@@ -107,16 +159,14 @@ namespace Core.Modules.SGP4Data.Application.Services
 
                 SGP4DataDTO SGP4DataDTO = new SGP4DataDTO
                 {
-                    NoradId = satelliteData.NoradId,
-                    Name = satelliteData.Name,
-                    TLELine1 = satelliteData.TLELine1,
-                    TLELine2 = satelliteData.TLELine2,
+                    NoradId = satelliteData.NORAD_CAT_ID,
+                    Name = satelliteData.OBJECT_NAME,
                     Longitude = geoPosition.Longitude.Degrees,
                     Latitude = geoPosition.Latitude.Degrees,
                     Altitude = geoPosition.Altitude,
                 };
 
-                LogSGP4DtoByName(SGP4DataDTO.NoradId, SGP4DataDTO.Name, SGP4DataDTO.TLELine1, SGP4DataDTO.TLELine2, SGP4DataDTO.Longitude, SGP4DataDTO.Latitude, SGP4DataDTO.Altitude);
+                LogSGP4DtoByName(SGP4DataDTO.NoradId, SGP4DataDTO.Name, SGP4DataDTO.Longitude, SGP4DataDTO.Latitude, SGP4DataDTO.Altitude);
 
                 return SGP4DataDTO;
             }
