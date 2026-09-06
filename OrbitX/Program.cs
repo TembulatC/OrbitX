@@ -14,6 +14,7 @@ using OrbitX.BackgroundWorkers;
 using OrbitX.BackgroundWorkers.Helper;
 using OrbitX.SignalRHubs;
 using Serilog;
+using Serilog.Expressions;
 using Serilog.Sinks.SystemConsole.Themes;
 
 namespace OrbitX
@@ -37,11 +38,13 @@ namespace OrbitX
 
             Log.Logger = new LoggerConfiguration()
                  .ReadFrom.Configuration(builder.Configuration)
+                 .Enrich.FromLogContext()
                  .WriteTo.Console(
                     theme: customTheme, 
                     outputTemplate: "[{Timestamp:HH:mm:ss}] [{Level:u4}] [{SourceContext}] {Message:lj}{NewLine}{Exception}",
                     applyThemeToRedirectedOutput: true
                  )
+                 .Filter.ByExcluding("RequestSource = 'Worker' and @l in ['Information', 'Debug', 'Verbose']")
                  .CreateLogger();
 
             Log.Information("Start OrbitX");

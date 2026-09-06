@@ -27,7 +27,12 @@ namespace Core.Modules.TLEData.Infrastructure.Repositories
                 return;
             }
 
+            // Берем ID только тех спутников, которые пришли в этой конкретной категории
+            var incomingIds = tle.Select(t => t.NoradId).ToList();
+
+            // Тянем из базы ТОЛЬКО те спутники, которые мы хотим обновить
             var existingSatellites = await _dbContext.Satellites
+                .Where(s => incomingIds.Contains(s.NoradId))
                 .ToDictionaryAsync(s => s.NoradId); // Переводим в Dictionary для быстрого поиска
 
             foreach (Satellite satelliteTle in tle)
@@ -41,7 +46,7 @@ namespace Core.Modules.TLEData.Infrastructure.Repositories
                     existing.TLELine2 = satelliteTle.TLELine2;
                     existing.Epoch = satelliteTle.Epoch;
                     existing.UpdatedAt = satelliteTle.UpdatedAt;
-                    existing.Category = satelliteTle.Category;
+                    existing.Category = satellitesCategory;
                 }
                 else
                 {
@@ -56,8 +61,18 @@ namespace Core.Modules.TLEData.Infrastructure.Repositories
 
         public async Task AddTLEData(List<Satellite> tle, string satellitesCategory, CancellationToken cancellationToken)
         {
+            if (tle == null || tle.Count <= 0)
+            {
+                return;
+            }
+
+            // Берем ID только тех спутников, которые пришли в этой конкретной категории
+            var incomingIds = tle.Select(t => t.NoradId).ToList();
+
+            // Тянем из базы ТОЛЬКО те спутники, которые мы хотим обновить
             var existingSatellites = await _dbContext.Satellites
-                .ToDictionaryAsync(s => s.NoradId); // Переводим в Dictionary для быстрого поиска
+                .Where(s => incomingIds.Contains(s.NoradId))
+                .ToDictionaryAsync(s => s.NoradId, cancellationToken); // Переводим в Dictionary для быстрого поиска
 
             foreach (Satellite satelliteTle in tle)
             {
@@ -70,7 +85,7 @@ namespace Core.Modules.TLEData.Infrastructure.Repositories
                     existing.TLELine2 = satelliteTle.TLELine2;
                     existing.Epoch = satelliteTle.Epoch;
                     existing.UpdatedAt = satelliteTle.UpdatedAt;
-                    existing.Category = satelliteTle.Category;
+                    existing.Category = satellitesCategory;
                 }
                 else
                 {

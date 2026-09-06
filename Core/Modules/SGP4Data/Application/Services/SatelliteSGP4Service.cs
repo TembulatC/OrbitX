@@ -1,18 +1,9 @@
 ﻿using Core.Modules.SGP4Data.Application.DTOs;
 using Core.Modules.SGP4Data.Application.Interfaces;
 using Core.Modules.SGP4Data.Domain.Interfaces;
-using Core.Modules.SGP4Data.Domain.Models;
-using Core.Modules.TLEData.Domain.Models;
 using Microsoft.Extensions.Logging;
 using SGPdotNET.CoordinateSystem;
-using SGPdotNET.Observation;
-using SGPdotNET.Propagation;
 using SGPdotNET.TLE;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Core.Modules.SGP4Data.Application.Services
 {

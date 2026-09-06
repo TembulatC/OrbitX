@@ -27,12 +27,6 @@ namespace OrbitX.SignalRHubs
             _worker.OnSatelliteWatched(noradId);
         }
 
-        // Вызывается автоматически, когда сокет пользователя успешно открылся
-        public override async Task OnConnectedAsync()
-        {
-            await base.OnConnectedAsync();
-        }
-
         // Вызывается автоматически, когда вкладка закрыта или оборвался интернет
         public override async Task OnDisconnectedAsync(Exception? exception)
         {

@@ -2,12 +2,12 @@
 using Microsoft.AspNetCore.SignalR;
 using OrbitX.BackgroundWorkers.Helper;
 using OrbitX.SignalRHubs;
+using Serilog.Context;
 using System.Collections.Concurrent;
-using System.Reflection.Metadata.Ecma335;
 
 namespace OrbitX.BackgroundWorkers
 {
-    public class SatelliteBackgroundWorker : BackgroundService
+    public partial class SatelliteBackgroundWorker : BackgroundService
     {      
         private readonly IServiceProvider _serviceProvider; // Вызов провайдера для Scoped
         private static readonly ConcurrentDictionary<int, (CancellationTokenSource cts, int counter)> _satelliteThreads = new(); // Адресная книга. ID спутника -> Токен отмены его потока данных
@@ -36,9 +36,9 @@ namespace OrbitX.BackgroundWorkers
 
                 if (addTaskRun)
                 {
-                    // Если успешно добавили — запускаем поток расчета. Токен ушел в словарь
-                    _logger.LogInformation($"Инициализация сокета для спутника: {noradId}");
+                    LogAddToken(noradId);
 
+                    // Если успешно добавили — запускаем поток расчета. Токен ушел в словарь
                     _ = Task.Run(() => StartSatelliteStreamingThread(noradId, linkedCts.Token, linkedCts), linkedCts.Token);
 
                     return;
@@ -48,7 +48,7 @@ namespace OrbitX.BackgroundWorkers
                     if (!_satelliteThreads.TryGetValue(noradId, out var oldValue))
                     {
                         linkedCts.Dispose();
-                        continue; // Спутника удалил какой-то из потокв, идем на второй круг
+                        continue; // Спутника удалил какой-то из потоков, идем на второй круг
                     } 
                     
                     int updatedUserCount = oldValue.counter + 1;
@@ -72,10 +72,7 @@ namespace OrbitX.BackgroundWorkers
             while (true)
             {
                 // Достаем текущее состояние спутника из словаря
-                if (!_satelliteThreads.TryGetValue(noradId, out var oldValue))
-                {
-                    return; // Спутника уже нет, выходим
-                }
+                if (!_satelliteThreads.TryGetValue(noradId, out var oldValue)) return; // Спутника уже нет, выходим
 
                 // Уменьшаем счетчик зрителей на 1
                 int updatedUserCount = oldValue.counter - 1;
@@ -87,11 +84,8 @@ namespace OrbitX.BackgroundWorkers
 
                     // TryUpdate меняет старое значение на новое
                     // Он сработает, ТОЛЬКО если в словаре всё еще лежит oldValue
-                    if (_satelliteThreads.TryUpdate(noradId, newState, oldValue))
-                    {
-                        _logger.LogInformation($"Пользователь ушел. Осталось: {updatedUserCount}");
-                        return; // Успешно обновили, выходим
-                    }
+                    if (_satelliteThreads.TryUpdate(noradId, newState, oldValue)) return; // Успешно обновили, выходим
+
                     // Если TryUpdate вернул false — значит, кто-то вклинился параллельно
                     // Цикл while автоматически уйдет на вторую попытку
                 }
@@ -102,7 +96,8 @@ namespace OrbitX.BackgroundWorkers
                     var entryToRemove = KeyValuePair.Create(noradId, oldValue);
                     if (_satelliteThreads.TryRemove(entryToRemove))
                     {
-                        _logger.LogWarning($"На спутнике {noradId} осталось 0 пользователей. Поток удален.");
+                        LogCancelTask(noradId);
+
                         oldValue.cts.Cancel();
 
                         return;
@@ -117,18 +112,22 @@ namespace OrbitX.BackgroundWorkers
         // Главный бесконечный цикл фонового процесса. Вызывается один раз при старте сервера
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("=== Фоновый воркер OrbitX успешно запущен ===");
+            LogLaunchWorker();
 
             // Запоминаем токен сервера, чтобы связывать его с токенами спутников
             _serverStoppingToken = stoppingToken;
             // Цикл каждые 6 часов
             using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromHours(6));
 
+            Log6HoursСycle();
+
             // Цикл получения и обновления данных
             try
             {
                 while (await timer.WaitForNextTickAsync(stoppingToken))
                 {
+                    LogLaunchСycle();
+
                     // Создаем стерильную Scoped-область
                     using (var scope = _serviceProvider.CreateScope())
                     {
@@ -137,6 +136,8 @@ namespace OrbitX.BackgroundWorkers
                         var downloaderTLE = scope.ServiceProvider.GetRequiredService<SatelliteTLEDownloader>();
                         await downloaderTLE.GetTLEData(stoppingToken);
                     }
+
+                    LogEndСycle();
                 }
             }
             catch (OperationCanceledException)
@@ -144,13 +145,13 @@ namespace OrbitX.BackgroundWorkers
                 // Метод корректно завершается при выключении сервера
             }
 
-            _logger.LogInformation("=== Фоновый воркер OrbitX остановлен ===");
+            LogStopWorker();
         }
 
         // ИЗОЛИРОВАННЫЙ, ПАРАЛЛЕЛЬНЫЙ ПОТОК РАСЧЕТА ДЛЯ КОНКРЕТНОГО ID СПУТНИКА
-        private async Task StartSatelliteStreamingThread(int noradId, CancellationToken token, CancellationTokenSource cts)
+        private async Task StartSatelliteStreamingThread(int noradId, CancellationToken token, CancellationTokenSource linkedCts)
         {
-            _logger.LogInformation($"[Thread Engine] Запущен поток для спутника ID: {noradId}");
+            LogAddTask(noradId);
 
             try
             {
@@ -159,37 +160,42 @@ namespace OrbitX.BackgroundWorkers
                 {
                     try
                     {
-                        // Scope на каждом такте внутри цикла while, чтобы EF Core очищал соеднинение с базой PostgreSQL!
-                        using var scope = _serviceProvider.CreateScope();
-                        var sgpService = scope.ServiceProvider.GetRequiredService<ISatelliteSGPServices>();
-
-                        // Получаем координаты на текущий такт
-                        var data = await sgpService.GetSGPByID(noradId);
-
-                        if (data != null)
+                        using (LogContext.PushProperty("RequestSource", "Worker"))
                         {
-                            Console.WriteLine($"Name:{data.Name}\nLat: {data.Latitude:F2}\nLon: {data.Longitude:F2}\nAlt: {data.Altitude:F2}");
+                            // Scope на каждом такте внутри цикла while, чтобы EF Core очищал соеднинение с базой PostgreSQL!
+                            using var scope = _serviceProvider.CreateScope();
+                            var sgpService = scope.ServiceProvider.GetRequiredService<ISatelliteSGPServices>();
 
-                            // Пуш в SignalR
-                            await _hubContext.Clients.Group($"Satellite_{noradId}").SendAsync("ReceivePosition", data, token);
-                        }
+                            // Получаем координаты на текущий такт
+                            var data = await sgpService.GetSGPByID(noradId);
+
+                            if (data != null)
+                            {
+                                // Пуш в SignalR
+                                await _hubContext.Clients.Group($"Satellite_{noradId}").SendAsync("ReceivePosition", data, token);
+                            }
+                        }                       
+
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (!(ex is OperationCanceledException))
                     {
-                        _logger.LogWarning($"[Thread Engine] Пропущен тактовый сбой в потоке {noradId}: {ex.Message}");
+                        LogException(noradId, ex.Message);
+  
                     }
 
                     // Обновление каждую секунду
                     await Task.Delay(1000, token);
                 }
-            }
-            catch (OperationCanceledException)
-            {
 
+                LogOperationCanceled(noradId);
             }
+            catch (OperationCanceledException) { LogOperationCanceledException(noradId); } // Игнорируем: поток завершает работу по требованию CancellationToken
             finally
             {
-                cts.Dispose();
+                // Поток гарантированно завершил работу (вышел из цикла или упал)
+                // Освобождаем ресурсы токена здесь
+                linkedCts.Dispose();
+                LogDisposeTask(noradId);
             }
         }
     }
