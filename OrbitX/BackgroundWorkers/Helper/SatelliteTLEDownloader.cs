@@ -1,7 +1,9 @@
 ﻿using Core.Modules.TLEData.Application.Services;
 using Core.Modules.TLEData.Domain.Interfaces;
 using Core.Modules.TLEData.Domain.Models;
+using Microsoft.AspNetCore.Server.HttpSys;
 using Microsoft.Extensions.Logging;
+using SGPdotNET.TLE;
 
 namespace OrbitX.BackgroundWorkers.Helper
 {
@@ -33,25 +35,38 @@ namespace OrbitX.BackgroundWorkers.Helper
         public async Task GetTLEData(CancellationToken cancellationToken)
         {
             using HttpClient client = _httpClientFactory.CreateClient();
-
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
 
+            int requestCount = 1;
+
             foreach (string category in CelestrakCategories)
-            {               
-                int seconds = Random.Shared.Next(15, 35);
+            {
                 string url = (category == "gpz" || category == "gpz-plus")
-                ? $"https://celestrak.org/NORAD/elements/gp.php?SPECIAL={category}&FORMAT=tle"
-                : $"https://celestrak.org/NORAD/elements/gp.php?GROUP={category}&FORMAT=tle";
+                ? $"https://celestrak.org/NORAD/elements/gp.php?SPECIAL={category}&FORMAT=cvs"
+                : $"https://celestrak.org/NORAD/elements/gp.php?GROUP={category}&FORMAT=cvs";
+
+                int seconds = Random.Shared.Next(30, 61);
+
+                LogHttpRequest(requestCount, seconds, url);
 
                 await Task.Delay(TimeSpan.FromSeconds(seconds), cancellationToken);
 
                 try
                 {
                     await ProcessCategoryResponse(client, url, category, cancellationToken);
+                    requestCount++;
                 }
                 catch (HttpRequestException ex)
                 {
-
+                    LogUnknownHttpError(ex);
+                    requestCount++;
+                    continue;
+                }
+                catch (Exception ex)
+                {
+                    LogOtherError(ex);
+                    requestCount++;
+                    continue;
                 }
             }
         }
@@ -62,8 +77,22 @@ namespace OrbitX.BackgroundWorkers.Helper
 
             if (response.IsSuccessStatusCode)
             {
-                string tle = await response.Content.ReadAsStringAsync(cancellationToken);
-                await SaveDataToRepository(tle, category, cancellationToken);
+                string omm = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                if (string.IsNullOrEmpty(omm))
+                {
+                    LogHTTPBodyNull();
+                    return;
+                }
+                else if (omm.Contains("invalid", StringComparison.OrdinalIgnoreCase) || omm.Contains("error", StringComparison.OrdinalIgnoreCase))
+                {
+                    LogInvalid();
+                    return;
+                }
+;
+                await SaveDataToRepository(omm, category, cancellationToken);
+
+                LogSuccess();
                 return;
             }
 
@@ -89,9 +118,23 @@ namespace OrbitX.BackgroundWorkers.Helper
             }
         }
 
-        private async Task SaveDataToRepository(string tle, string category, CancellationToken cancellationToken)
+        // Отдельный метод для обращения к БД
+        private async Task SaveDataToRepository(string omm, string category, CancellationToken cancellationToken)
         {
-            List<Satellite> parseData = _satellitesParserService.Parse(tle, category);
+            if (string.IsNullOrEmpty(omm))
+            {
+                LogHTTPBodyNull();
+                return;
+            }
+
+            List<Satellite> parseData = _satellitesParserService.Parse(omm, category);
+
+            if (parseData == null || parseData.Count <= 0)
+            {
+                LogParseBodyNull();
+                return;
+            }
+
             await _satellitesDataRepository.AddTLEData(parseData, category, cancellationToken);
         }
     }

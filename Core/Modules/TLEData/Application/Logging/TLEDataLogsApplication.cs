@@ -40,7 +40,7 @@ namespace Core.Modules.TLEData.Application.Services
         [LoggerMessage(
             EventId = 202,
             Level = LogLevel.Warning,
-            Message = "Отмена обработки парсером. Строка TLE данных пришла пустой")]
+            Message = "Отмена обработки парсером. Строка OMM данных пришла пустой")]
         private partial void LogCancellationParserProcessing();
 
         [LoggerMessage(

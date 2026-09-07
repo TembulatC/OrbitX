@@ -59,8 +59,8 @@
         [LoggerMessage(
             EventId = 3010,
             Level = LogLevel.Information,
-            Message = "Через 6 часов будет запущен цикл обновления данных спутников")]
-        private partial void Log6HoursСycle();
+            Message = "Через 2 часа будет запущен цикл обновления данных спутников")]
+        private partial void Log2HoursСycle();
 
         [LoggerMessage(
             EventId = 3011,
@@ -71,7 +71,7 @@
         [LoggerMessage(
             EventId = 3012,
             Level = LogLevel.Information,
-            Message = "Цикл обновления данных спутников окончен. Следующий через 6 часов")]
+            Message = "Цикл обновления данных спутников окончен. Следующий через 2 часа")]
         private partial void LogEndСycle();
     }
 }
@@ -84,7 +84,7 @@ namespace OrbitX.BackgroundWorkers.Helper
         [LoggerMessage(
             EventId = 4001,
             Level = LogLevel.Error,
-            Message = "(HTTP {StatusCode}) Доступ временно заблокирован из-за слишком частых запросов")]
+            Message = "(HTTP {StatusCode}) Доступ временно заблокирован из-за слишком частых запросов. Цикл продолжится через 2.5 часа")]
         private partial void Log403StatusCode(int statusCode);
 
         [LoggerMessage(
@@ -110,5 +110,47 @@ namespace OrbitX.BackgroundWorkers.Helper
            Level = LogLevel.Error,
            Message = "(HTTP {StatusCode}) Сетевой запрос завершился с неизвестной ошибкой: {ReasonPhrase}")]
         private partial void LogUnknownError(int statusCode, string? reasonPhrase);
+
+        [LoggerMessage(
+           EventId = 4006,
+           Level = LogLevel.Information,
+           Message = "{RequestCount} запрос через {Seconds} секунд(ы). URL: {Url}")]
+        private partial void LogHttpRequest(int requestCount, int seconds, string url);
+
+        [LoggerMessage(
+           EventId = 4007,
+           Level = LogLevel.Information,
+           Message = "Запрос прошел успешно")]
+        private partial void LogSuccess();
+
+        [LoggerMessage(
+           EventId = 4008,
+           Level = LogLevel.Warning,
+           Message = "Тело HTTP-запроса пришло пустым переходим к следующему")]
+        private partial void LogHTTPBodyNull();
+
+        [LoggerMessage(
+           EventId = 4009,
+           Level = LogLevel.Warning,
+           Message = "Парсер вернул пустой список спутников. Переходим к следующему запросу")]
+        private partial void LogParseBodyNull();
+
+        [LoggerMessage(
+           EventId = 4010,
+           Level = LogLevel.Warning,
+           Message = "Неверный запрос. Ссылка некорректна/спутников такой категории не существует. Переходим к следующему запросу")]
+        private partial void LogInvalid();
+
+        [LoggerMessage(
+           EventId = 4011,
+           Level = LogLevel.Error,
+           Message = "Неизвестная сетевая ошибка при HTTP-запросе. Переходим к следующему запросу")]
+        private partial void LogUnknownHttpError(HttpRequestException ex);
+
+        [LoggerMessage(
+           EventId = 4012,
+           Level = LogLevel.Error,
+           Message = "Неизвестная ошибка. Переходим к следующему запросу")]
+        private partial void LogOtherError(Exception ex);
     }
 }

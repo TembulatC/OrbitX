@@ -73,8 +73,11 @@ namespace Core.Modules.TLEData.Infrastructure.Repositories
 
         public async Task AddTLEData(List<Satellite> omm, string satellitesCategory, CancellationToken cancellationToken)
         {
+            LogLaunchCts();
+
             if (omm == null || omm.Count <= 0)
             {
+                LogCancellationAddDataCts();
                 return;
             }
 
@@ -119,6 +122,7 @@ namespace Core.Modules.TLEData.Infrastructure.Repositories
 
             // Сохраняем всё одним мощным батчем
             await _dbContext.SaveChangesAsync(cancellationToken);
+            LogUpdateDataCts();
         }
     }
 }

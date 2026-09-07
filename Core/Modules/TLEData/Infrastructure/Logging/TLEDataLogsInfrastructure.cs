@@ -21,6 +21,24 @@ namespace Core.Modules.TLEData.Infrastructure.Repositories
             Level = LogLevel.Information,
             Message = "Данные по спутникам успешно обновлены")]
         private partial void LogUpdateData();
+
+        [LoggerMessage(
+            EventId = 304,
+            Level = LogLevel.Information,
+            Message = "Запуск добавления данных в базу данных")]
+        private partial void LogLaunchCts();
+
+        [LoggerMessage(
+            EventId = 305,
+            Level = LogLevel.Warning,
+            Message = "Добавление данных отменено. Список спутников пришел пустым")]
+        private partial void LogCancellationAddDataCts();
+
+        [LoggerMessage(
+            EventId = 306,
+            Level = LogLevel.Information,
+            Message = "Данные по спутникам успешно обновлены")]
+        private partial void LogUpdateDataCts();
     }
 }
 

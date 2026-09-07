@@ -39,7 +39,7 @@ namespace OrbitX.BackgroundWorkers
                     LogAddToken(noradId);
 
                     // Если успешно добавили — запускаем поток расчета. Токен ушел в словарь
-                    _ = Task.Run(() => StartSatelliteStreamingThread(noradId, linkedCts.Token, linkedCts), linkedCts.Token);
+                    _ = Task.Run(async () => await StartSatelliteStreamingThread(noradId, linkedCts.Token, linkedCts), linkedCts.Token);
 
                     return;
                 }
@@ -116,28 +116,28 @@ namespace OrbitX.BackgroundWorkers
 
             // Запоминаем токен сервера, чтобы связывать его с токенами спутников
             _serverStoppingToken = stoppingToken;
-            // Цикл каждые 6 часов
-            using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromHours(6));
-
-            Log6HoursСycle();
 
             // Цикл получения и обновления данных
             try
             {
-                while (await timer.WaitForNextTickAsync(stoppingToken))
+                while (!stoppingToken.IsCancellationRequested)
                 {
+                    Log2HoursСycle();
+
+                    await Task.Delay(TimeSpan.FromHours(2), stoppingToken);
+
                     LogLaunchСycle();
 
-                    // Создаем стерильную Scoped-область
                     using (var scope = _serviceProvider.CreateScope())
                     {
                         stoppingToken.ThrowIfCancellationRequested();
-                        
+
                         var downloaderTLE = scope.ServiceProvider.GetRequiredService<SatelliteTLEDownloader>();
                         await downloaderTLE.GetTLEData(stoppingToken);
                     }
 
                     LogEndСycle();
+
                 }
             }
             catch (OperationCanceledException)
