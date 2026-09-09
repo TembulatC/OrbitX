@@ -1,0 +1,16 @@
+﻿using Core.Modules.TLEData.Domain.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Core.Modules.TLEData.Domain.Interfaces
+{
+    public interface ISatellitesDataRepository
+    {
+        Task AddTLEData(List<Satellite> tle, string satellitesCategory);
+        Task AddTLEData(List<Satellite> tle, string satellitesCategory, CancellationToken cancellationToken);
+
+    }
+}
