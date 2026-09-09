@@ -84,26 +84,26 @@ namespace OrbitX.BackgroundWorkers.Helper
         [LoggerMessage(
             EventId = 4001,
             Level = LogLevel.Error,
-            Message = "(HTTP {StatusCode}) Доступ временно заблокирован из-за слишком частых запросов. Цикл продолжится через 2.5 часа")]
-        private partial void Log403StatusCode(int statusCode);
+            Message = "(HTTP {StatusCode}) Доступ временно заблокирован из-за слишком частых запросов. Цикл продолжится через 3 часа с URL: {Url}")]
+        private partial void Log403StatusCode(int statusCode, string url);
 
         [LoggerMessage(
            EventId = 4002,
            Level = LogLevel.Warning,
-           Message = "(HTTP {StatusCode}) Страницы к которой был HTTP-запрос не существует")]
+           Message = "(HTTP {StatusCode}) Страницы к которой был HTTP-запрос не существует. Переходим к следующей категории")]
         private partial void Log404StatusCode(int statusCode);
 
         [LoggerMessage(
            EventId = 4003,
            Level = LogLevel.Error,
-           Message = "(HTTP {StatusCode}) На внешнем сервере запросов произошел сбой")]
-        private partial void Log500StatusCode(int statusCode);
+           Message = "(HTTP {StatusCode}) На внешнем сервере запросов произошел сбой. Цикл продолжится через 10 минут с URL: {Url}")]
+        private partial void Log500StatusCode(int statusCode, string url);
 
         [LoggerMessage(
            EventId = 4004,
            Level = LogLevel.Warning,
-           Message = "(HTTP {StatusCode}) Внешний сервер запросов временно недоступен")]
-        private partial void Log503StatusCode(int statusCode);
+           Message = "(HTTP {StatusCode}) Внешний сервер запросов временно недоступен. Цикл продолжится через 30 минут с URL: {Url}")]
+        private partial void Log503StatusCode(int statusCode, string url);
 
         [LoggerMessage(
            EventId = 4005,
@@ -152,5 +152,11 @@ namespace OrbitX.BackgroundWorkers.Helper
            Level = LogLevel.Error,
            Message = "Неизвестная ошибка. Переходим к следующему запросу")]
         private partial void LogOtherError(Exception ex);
+
+        [LoggerMessage(
+           EventId = 4012,
+           Level = LogLevel.Critical,
+           Message = "Останавливаем весь цикл обхода")]
+        private partial void LogCritical403Error(Exception ex);
     }
 }
