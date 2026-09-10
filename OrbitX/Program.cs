@@ -86,6 +86,9 @@ namespace OrbitX
             // Добавляем инфраструктуру веб-сокетов SignalR
             builder.Services.AddSignalR();
 
+            // Включаем поддержку IMemoryCache
+            builder.Services.AddMemoryCache();
+
             var app = builder.Build();
 
             // Блок автомиграции
