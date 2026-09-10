@@ -2,6 +2,7 @@
 using Core.Modules.SGP4Data.Domain.Models;
 using Core.Modules.SGP4Data.Infrastructure.DBContext;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace Core.Modules.SGP4Data.Infrastructure.Repositories
@@ -10,11 +11,13 @@ namespace Core.Modules.SGP4Data.Infrastructure.Repositories
     {
         private readonly SGP4DBContext _dbContext;
         private readonly ILogger<SatelliteSGPRepository> _logger;
+        private readonly IMemoryCache _cache; // Кэширование
 
-        public SatelliteSGPRepository(SGP4DBContext dbContext, ILogger<SatelliteSGPRepository> logger)
+        public SatelliteSGPRepository(SGP4DBContext dbContext, ILogger<SatelliteSGPRepository> logger, IMemoryCache cache)
         {
             _dbContext = dbContext;
             _logger = logger;
+            _cache = cache;
         }
 
         public async Task<SatelliteTLE?> GetTLEByID(int noradId)
@@ -27,10 +30,33 @@ namespace Core.Modules.SGP4Data.Infrastructure.Repositories
                 return null;
             }
 
-            var satelliteTLE = await _dbContext.SatellitesTLE.FindAsync(noradId);
+            // Формируем уникальный ключ для кеша
+            string cacheKey = $"omm:{noradId}";
 
-            if (satelliteTLE != null) LogSuccessById();
-            else LogNotFoundById(noradId);
+            // Проверяем, есть ли уже данные в кеше
+            if (!_cache.TryGetValue(cacheKey, out SatelliteTLE? satelliteTLE))
+            {
+                // Если в кеше нет — ОДИН раз идем в базу данных
+                satelliteTLE = await _dbContext.SatellitesTLE.FindAsync(noradId);
+
+                if (satelliteTLE != null)
+                {
+                    LogSuccessById();
+
+                    // Сохраняем в кеш 
+                    var cacheOptions = new MemoryCacheEntryOptions()
+                     // Спутник удалится из памяти через 2 часа
+                    .SetAbsoluteExpiration(TimeSpan.FromHours(2))
+                    // Если этот спутник никто не смотрел 15 минут — выкидываем его, чтобы не забивать ОЗУ сервера
+                    .SetSlidingExpiration(TimeSpan.FromMinutes(15))
+                    // Задаем высокий приоритет, чтобы сборщик мусора (GC) не снес его принудительно
+                    .SetPriority(CacheItemPriority.High);
+
+                    // Записываем OMM-сущность из базы в оперативную память сервера
+                    _cache.Set(cacheKey, satelliteTLE, cacheOptions);
+                }
+                else LogNotFoundById(noradId);
+            }
 
             return satelliteTLE;
         }
