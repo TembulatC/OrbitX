@@ -3,12 +3,12 @@ using Core.Modules.SGP4Data.Application.Services;
 using Core.Modules.SGP4Data.Domain.Interfaces;
 using Core.Modules.SGP4Data.Infrastructure.DBContext;
 using Core.Modules.SGP4Data.Infrastructure.Repositories;
-using Core.Modules.TLEData.Application.Interfaces;
-using Core.Modules.TLEData.Application.Services;
-using Core.Modules.TLEData.Domain.Interfaces;
-using Core.Modules.TLEData.Infrastructure.DBContext;
-using Core.Modules.TLEData.Infrastructure.HttpClients;
-using Core.Modules.TLEData.Infrastructure.Repositories;
+using Core.Modules.SatelliteData.Application.Interfaces;
+using Core.Modules.SatelliteData.Application.Services;
+using Core.Modules.SatelliteData.Domain.Interfaces;
+using Core.Modules.SatelliteData.Infrastructure.DBContext;
+using Core.Modules.SatelliteData.Infrastructure.HttpClients;
+using Core.Modules.SatelliteData.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using OrbitX.BackgroundWorkers;
 using OrbitX.BackgroundWorkers.Helper;
@@ -66,9 +66,11 @@ namespace OrbitX
             // –егистрируем HttpClient и сам класс клиента
             builder.Services.AddHttpClient<HttpSatellitesData>();
 
-            // ƒобавление сервисов и репозиториев дл€ модул€ TLEData
+            // ƒобавление сервисов и репозиториев дл€ модул€ SatelliteData
             builder.Services.AddScoped<ISatellitesDataRepository, SatellitesDataRepository>();
+            builder.Services.AddScoped<ISatellitesGetDataRepository, SatellitesGetDataRepository>();
             builder.Services.AddScoped<ISatellitesService, SatellitesDataService>();
+            builder.Services.AddScoped<ISatellitesGetService, SatellitesGetDataService>();
             builder.Services.AddSingleton<SatellitesParserService>();
 
             // ƒобавление сервисов и репозиториев дл€ модул€ SGP4

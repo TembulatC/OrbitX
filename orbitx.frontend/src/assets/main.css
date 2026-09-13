@@ -1,35 +1,59 @@
 @import './base.css';
 
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  font-weight: normal;
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-a,
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-  padding: 3px;
+html, body, #app {
+  height: 100%;
 }
 
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
+html {
+  scroll-behavior: smooth;
 }
 
-@media (min-width: 1024px) {
-  body {
-    display: flex;
-    place-items: center;
-  }
+/* Тонкий вес (Light) */
+@font-face {
+  font-family: 'Exo 2';
+  src: url('./fonts/Exo2-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
 
-  #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
-  }
+/* Обычный вес (Regular) */
+@font-face {
+  font-family: 'Exo 2';
+  src: url('./fonts/Exo2-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Жирный вес (Bold) */
+@font-face {
+  font-family: 'Exo 2';
+  src: url('./fonts/Exo2-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+body {
+  min-height: 100%;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: white;
+  background-color: #1a1a1a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img {
+  max-width: 100%; /* Картинка сжимается, если ее родительский блок становится уже нее */
+  height: auto; /* Пропорции картинки сохраняются при изменении ширины */
+  display: block; /* Убирает микро-отступ (около 3-4px) снизу картинки */
 }

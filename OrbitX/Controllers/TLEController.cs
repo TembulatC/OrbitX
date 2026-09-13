@@ -1,5 +1,5 @@
 ﻿using Core.Modules.SGP4Data.Application.Interfaces;
-using Core.Modules.TLEData.Application.Interfaces;
+using Core.Modules.SatelliteData.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using OrbitX.BackgroundWorkers;
 using Serilog.Context;
@@ -10,14 +10,16 @@ namespace OrbitX.Controllers
     [Route("api/v1")]
     public partial class TLEController : ControllerBase
     {
-        private readonly ISatellitesService _tLEDataService;
+        private readonly ISatellitesService _satelliteDataService;
+        private readonly ISatellitesGetService _satelliteGetService;
         private readonly ISatelliteSGPServices _satelliteSGPServices;
         private readonly SatelliteBackgroundWorker _worker;
         private readonly ILogger<TLEController> _logger;
 
-        public TLEController(ISatellitesService tLEDataService, ISatelliteSGPServices satelliteSGPServices, SatelliteBackgroundWorker worker, ILogger<TLEController> logger)
+        public TLEController(ISatellitesService satelliteDataService, ISatellitesGetService satelliteGetService, ISatelliteSGPServices satelliteSGPServices, SatelliteBackgroundWorker worker, ILogger<TLEController> logger)
         {
-            _tLEDataService = tLEDataService;
+            _satelliteDataService = satelliteDataService;
+            _satelliteGetService = satelliteGetService;
             _satelliteSGPServices = satelliteSGPServices;
             _worker = worker;
             _logger = logger;
@@ -25,7 +27,7 @@ namespace OrbitX.Controllers
 
         [HttpPost]
         [Route("[action]")]
-        public async Task<IActionResult> AddTLEData(string satellitesCategory)
+        public async Task<IActionResult> AddSatelliteData(string satellitesCategory)
         {
             LogLaunchAdd(satellitesCategory);
 
@@ -35,13 +37,14 @@ namespace OrbitX.Controllers
                 return BadRequest("Название категории спутников не может быть пустым");
             }
 
-            await _tLEDataService.AddTLEData(satellitesCategory);
+            await _satelliteDataService.AddSatelliteData(satellitesCategory);
 
             LogSuccessAdd();
             return Ok();
         }
 
-        [HttpGet("position-by-id/{noradId:int}")]
+        [HttpGet]
+        [Route("[action]")]
         public async Task<IActionResult> GetSGP4DataById(int noradId)
         {
             LogLaunchGetById(noradId);
@@ -64,7 +67,8 @@ namespace OrbitX.Controllers
             return Ok(satelliteSPG);
         }
 
-        [HttpGet("position-by-name/{satelliteName}")]
+        [HttpGet]
+        [Route("[action]")]
         public async Task<IActionResult> GetSGP4DataByName(string satelliteName)
         {
             LogLaunchGetByName(satelliteName);
@@ -85,6 +89,44 @@ namespace OrbitX.Controllers
 
             LogSuccessGetByName();
             return Ok(satelliteSPG);
+        }
+
+        [HttpGet]
+        [Route("[action]")]
+        public async Task<IActionResult> GetSatellitesFiltersById(string category, int page, int pageSize = 25)
+        {
+            if (string.IsNullOrWhiteSpace(category))
+            {
+                return BadRequest("Категория спутников не может быть пустой");
+            }
+
+            var satellitesList = await _satelliteGetService.GetSatellitesFiltersById(category, page, pageSize);
+
+            if (satellitesList == null || satellitesList.Count <= 0)
+            {
+                return NotFound($"Данных о категории {category} не существует");
+            }
+
+            return Ok(satellitesList);
+        }
+
+        [HttpGet]
+        [Route("[action]")]
+        public async Task<IActionResult> GetSatellitesFiltersByName(string category, int page, int pageSize = 25)
+        {
+            if (string.IsNullOrWhiteSpace(category))
+            {
+                return BadRequest("Категория спутников не может быть пустой");
+            }
+
+            var satellitesList = await _satelliteGetService.GetSatellitesFiltersByName(category, page, pageSize);
+
+            if (satellitesList == null || satellitesList.Count <= 0)
+            {
+                return NotFound($"Данных о категории {category} не существует");
+            }
+
+            return Ok(satellitesList);
         }
 
         // Имитируем вход пользователя на страницу спутника

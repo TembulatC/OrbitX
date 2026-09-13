@@ -1,6 +1,6 @@
-﻿using Core.Modules.TLEData.Application.Services;
-using Core.Modules.TLEData.Domain.Interfaces;
-using Core.Modules.TLEData.Domain.Models;
+﻿using Core.Modules.SatelliteData.Application.Services;
+using Core.Modules.SatelliteData.Domain.Interfaces;
+using Core.Modules.SatelliteData.Domain.Models;
 
 namespace OrbitX.BackgroundWorkers.Helper
 {
@@ -29,7 +29,7 @@ namespace OrbitX.BackgroundWorkers.Helper
             _satellitesParserService = satellitesParserService;
         }
 
-        public async Task GetTLEData(CancellationToken cancellationToken)
+        public async Task GetSatelliteData(CancellationToken cancellationToken)
         {
             int requestCount = 1;
 
@@ -195,7 +195,7 @@ namespace OrbitX.BackgroundWorkers.Helper
                 return;
             }
 
-            await _satellitesDataRepository.AddTLEData(parseData, category, cancellationToken);
+            await _satellitesDataRepository.AddSatelliteData(parseData, category, cancellationToken);
         }
     }
 }
