@@ -4,7 +4,7 @@ namespace OrbitX.Controllers
 {
     public partial class TLEController
     {
-        #region AddTLEData
+        #region AddSatelliteData
 
         [LoggerMessage(
             EventId = 1001,
