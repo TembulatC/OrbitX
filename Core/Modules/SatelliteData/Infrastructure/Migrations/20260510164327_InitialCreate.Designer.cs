@@ -11,7 +11,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Core.Modules.SatelliteData.Domain.Infrastructure.Migrations
 {
-    [DbContext(typeof(TLEDBContext))]
+    [DbContext(typeof(OMMDBContext))]
     [Migration("20260510164327_InitialCreate")]
     partial class InitialCreate
     {

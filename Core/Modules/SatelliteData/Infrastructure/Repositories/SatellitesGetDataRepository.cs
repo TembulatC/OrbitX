@@ -8,10 +8,10 @@ namespace Core.Modules.SatelliteData.Infrastructure.Repositories
 {
     public class SatellitesGetDataRepository : ISatellitesGetDataRepository
     {
-        private readonly TLEDBContext _dbContext;
+        private readonly OMMDBContext _dbContext;
         private readonly IMemoryCache _cache;
         
-        public SatellitesGetDataRepository(TLEDBContext dbContext, IMemoryCache cache)
+        public SatellitesGetDataRepository(OMMDBContext dbContext, IMemoryCache cache)
         {
             _dbContext = dbContext;
             _cache = cache;
@@ -24,7 +24,7 @@ namespace Core.Modules.SatelliteData.Infrastructure.Repositories
             if (string.IsNullOrEmpty(category)) return new List<Satellite>();
 
             // Формируем уникальный ключ для кеша
-            string cacheKey = $"satellites_list_{category.ToUpperInvariant()}";
+            string cacheKey = $"satellites_list_{category.ToUpperInvariant()}_by_id";
 
             // Проверяем, есть ли уже данные в кеше
             if (!_cache.TryGetValue(cacheKey, out List<int>? satellitesIdsList))
@@ -75,7 +75,7 @@ namespace Core.Modules.SatelliteData.Infrastructure.Repositories
             if (string.IsNullOrEmpty(category)) return new List<Satellite>();
 
             // Формируем уникальный ключ для кеша
-            string cacheKey = $"satellites_list_{category.ToUpperInvariant()}";
+            string cacheKey = $"satellites_list_{category.ToUpperInvariant()}_by_name";
 
             // Проверяем, есть ли уже данные в кеше
             if (!_cache.TryGetValue(cacheKey, out List<int>? satellitesIdsList))

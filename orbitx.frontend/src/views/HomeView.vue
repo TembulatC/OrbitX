@@ -13,7 +13,7 @@
 
         <!-- Кнопки действий -->
         <div class="hero-actions">
-          <router-link to="/satellites" class="btn btn-primary">
+          <router-link to="/satellites_modeling" class="btn btn-primary">
             Открыть каталог
           </router-link>
           <button @click="scrollToRoadmap" class="btn btn-secondary">

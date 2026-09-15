@@ -8,10 +8,10 @@ namespace Core.Modules.SatelliteData.Infrastructure.Repositories
 {
     public partial class SatellitesDataRepository : ISatellitesDataRepository
     {
-        private readonly TLEDBContext _dbContext;
+        private readonly OMMDBContext _dbContext;
         private readonly ILogger<SatellitesDataRepository> _logger;
 
-        public SatellitesDataRepository(TLEDBContext dbContext, ILogger<SatellitesDataRepository> logger)
+        public SatellitesDataRepository(OMMDBContext dbContext, ILogger<SatellitesDataRepository> logger)
         {
             _dbContext = dbContext;
             _logger = logger;

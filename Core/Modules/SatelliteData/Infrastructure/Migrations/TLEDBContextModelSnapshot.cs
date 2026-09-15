@@ -10,7 +10,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Core.Modules.SatelliteData.Domain.Infrastructure.Migrations
 {
-    [DbContext(typeof(TLEDBContext))]
+    [DbContext(typeof(OMMDBContext))]
     partial class TLEDBContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
@@ -92,7 +92,7 @@ namespace Core.Modules.SatelliteData.Domain.Infrastructure.Migrations
 
                     b.HasIndex("Category");
 
-                    b.ToTable("Satellites");
+                    b.ToTable("Satellites", (string)null);
                 });
 #pragma warning restore 612, 618
         }
