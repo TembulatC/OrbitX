@@ -4,7 +4,7 @@ using Core.Modules.SatelliteData.Domain.Models;
 
 namespace Core.Modules.SatelliteData.Infrastructure.DBContext
 {
-    public class TLEDBContext(DbContextOptions<TLEDBContext> options) : DbContext(options)
+    public class OMMDBContext(DbContextOptions<OMMDBContext> options) : DbContext(options)
     {
         // Главная таблица
         public DbSet<Satellite> Satellites { get; set; } // Создание главной таблицы

@@ -14,14 +14,13 @@ using OrbitX.BackgroundWorkers;
 using OrbitX.BackgroundWorkers.Helper;
 using OrbitX.SignalRHubs;
 using Serilog;
-using Serilog.Expressions;
 using Serilog.Sinks.SystemConsole.Themes;
 
 namespace OrbitX
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -54,7 +53,7 @@ namespace OrbitX
 
             // Подключение PostgreSQL
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-            builder.Services.AddDbContext<TLEDBContext>(options => options.UseNpgsql(connectionString));
+            builder.Services.AddDbContext<OMMDBContext>(options => options.UseNpgsql(connectionString));
             builder.Services.AddDbContext<SGP4DBContext>(options => options.UseNpgsql(connectionString));
 
             builder.Services.AddControllers();
@@ -97,11 +96,11 @@ namespace OrbitX
             using (var scope = app.Services.CreateScope())
             {
                 var services = scope.ServiceProvider;
-                var context = services.GetRequiredService<TLEDBContext>();
+                var context = services.GetRequiredService<OMMDBContext>();
 
                 // Эта команда смотрит на папку Migrations в Core 
                 // и применяет их к базе в Docker, если они еще не применены.
-                context.Database.Migrate();
+                await context.Database.MigrateAsync();
             }
 
             // Configure the HTTP request pipeline.
@@ -124,7 +123,7 @@ namespace OrbitX
             // Выделяем адрес для SignalR
             app.MapHub<SignalRHub>("/ws/satellite");
 
-            app.Run();
+            await app.RunAsync();
         }
     }
 }

@@ -8,10 +8,10 @@ namespace Core.Modules.SatelliteData.Infrastructure.Repositories
 {
     public class SatellitesGetDataRepository : ISatellitesGetDataRepository
     {
-        private readonly TLEDBContext _dbContext;
+        private readonly OMMDBContext _dbContext;
         private readonly IMemoryCache _cache;
         
-        public SatellitesGetDataRepository(TLEDBContext dbContext, IMemoryCache cache)
+        public SatellitesGetDataRepository(OMMDBContext dbContext, IMemoryCache cache)
         {
             _dbContext = dbContext;
             _cache = cache;

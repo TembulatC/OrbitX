@@ -11,7 +11,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Core.Modules.SatelliteData.Domain.Infrastructure.Migrations
 {
-    [DbContext(typeof(TLEDBContext))]
+    [DbContext(typeof(OMMDBContext))]
     [Migration("20260906203524_UpdateSatelliteToOmmCsv2")]
     partial class UpdateSatelliteToOmmCsv2
     {
