@@ -2,17 +2,16 @@
   <section class="catalog-section">
     <div class="container">
 
-      <!-- 1 БЛОК — СЛОЖНАЯ ПАНЕЛЬ ФИЛЬТРОВ И ПОИСКА -->
+      <!-- 1 БЛОК — ПАНЕЛЬ ФИЛЬТРОВ И ПОИСКА -->
       <div class="filters-block">
 
         <!-- Ряд 1: Главный поиск + отдельная маленькая квадратная кнопка поиска справа -->
         <div class="filters-row row-one">
           <div class="main-search">
-            <!-- СВЯЗЬ: v-model привязывает текст к переменной searchQuery -->
-            <input v-model="searchQuery" type="text" placeholder="Поиск спутника по названию или ID..." class="form-input" />
+            <input v-model="searchQuery" type="text" placeholder="Поиск спутника по названию или ID..." class="form-input" @keyup.enter="handleSearch" />
           </div>
-          <!-- СВЯЗЬ: Клик по маленькой кнопке вызывает функцию fetchSatellites() -->
-          <button type="button" @click="fetchSatellites" class="btn-search-small" title="Найти по названию/ID">
+          <!-- Кнопка-лупа теперь пока просто картинка, ничего не вызывает -->
+          <button type="button" class="btn-search-small" title="Найти по названию/ID">
             🔍
           </button>
         </div>
@@ -22,7 +21,6 @@
 
           <!-- 1. Выпадающий список категорий CelesTrak -->
           <div class="filter-item">
-            <!-- СВЯЗЬ: v-model отслеживает выбранную категорию -->
             <select v-model="selectedCategory" class="form-select">
               <option value="all">Выбрать категорию группировки</option>
               <optgroup label="Weather & Earth Resources Satellites">
@@ -49,7 +47,7 @@
                 <option value="qianfan">Qianfan</option>
                 <option value="hulianwang">Hulianwang Digui</option>
                 <option value="kuiper">Kuiper</option>
-                <option value="iridium-next">Iridium-NEXT</option>
+                <option value="iridium-next">Iridium NEXT</option>
                 <option value="orbcomm">Orbcomm</option>
                 <option value="globalstar">Globalstar</option>
                 <option value="amateur">Amateur Radio</option>
@@ -79,9 +77,8 @@
             </select>
           </div>
 
-          <!-- 2. Сортировка по Id/Названию (Управляет выбором C#-метода бэкенда) -->
+          <!-- 2. Сортировка по Id/Названию -->
           <div class="filter-item">
-            <!-- СВЯЗЬ: v-model привязан к sortBy (id или name) -->
             <select v-model="sortBy" class="form-select">
               <option value="id">Сортировать по NORAD ID</option>
               <option value="name">Сортировать по Названию</option>
@@ -90,7 +87,6 @@
 
           <!-- 3. Сколько отображать за раз 25/50/100 -->
           <div class="filter-item item-short">
-            <!-- СВЯЗЬ: v-model привязан к переменной pageSize -->
             <select v-model="pageSize" class="form-select">
               <option value="25">25 на странице</option>
               <option value="50">50 на странице</option>
@@ -100,8 +96,7 @@
 
           <!-- 4. КНОПКА ПОИСКА ВО ВТОРОМ РЯДУ -->
           <div class="filter-action">
-            <!-- СВЯЗЬ: @click запускает fetchSatellites() с проверкой категории на 'all' -->
-            <button type="button" @click="fetchSatellites" class="btn-search-submit">ПОИСК</button>
+            <button type="button" @click="handleSearch" class="btn-search-submit">ПОИСК</button>
           </div>
 
         </div>
@@ -119,19 +114,16 @@
               </tr>
             </thead>
             <tbody>
-              <!-- Состояние пустоты: пока бэкенд не вернул данные, показываем заглушку -->
               <tr v-if="satellites.length === 0">
-                <td colspan="3" style="text-align: center; color: #94a3b8; padding: 40px 0;">
+                <td colspan="3" style="text-align: center; color: #64748b; padding: 40px 0;">
                   Выберите категорию группировки и нажмите кнопку «Поиск» для загрузки данных
                 </td>
               </tr>
 
-              <!-- СВЯЗЬ: Цикл v-for перебирает массив satellites, прилетающий из .NET бэкенда -->
               <tr v-for="sat in satellites" :key="sat.noradId">
                 <td class="td-id">{{ sat.noradId }}</td>
                 <td class="td-name">{{ sat.name }}</td>
                 <td class="td-action">
-                  <!-- Кнопка-ссылка. Сгенерирует URL вида: /satellites_modeling?s=ID -->
                   <router-link :to="{ path: '/satellites_modeling', query: { s: sat.noradId } }"
                                class="btn-modeling">
                     Запустить
@@ -143,54 +135,51 @@
         </div>
 
         <!-- ПАНЕЛЬ ПОСТРАНИЧНОЙ НАВИГАЦИИ (Под таблицей) -->
-        <!-- Показываем её только если в таблице физически есть хотя бы один спутник -->
         <div v-if="satellites.length > 0" class="pagination-panel">
-          <!-- СВЯЗЬ: Клик уменьшает страницу на 1 и шлет запрос -->
           <button type="button" @click="prevPage" class="pag-btn prev-btn" title="Предыдущая страница">‹</button>
-
           <div class="pag-input-wrapper">
-            <!-- СВЯЗЬ: v-model связывает инпут с currentPage. При изменении через Enter сработает @change -->
-            <input v-model.number="currentPage" type="number" min="1" class="pag-input" @change="fetchSatellites" title="Введите страницу и нажмите Enter" />
+            <!-- При ручном вводе передаем текущее вбитое число -->
+            <input v-model.number="currentPage" type="number" min="1" class="pag-input" @change="fetchSatellites(currentPage)" title="Введите страницу и нажмите Enter" />
           </div>
-
-          <!-- СВЯЗЬ: Клик увеличивает страницу на 1 и шлет запрос -->
           <button type="button" @click="nextPage" class="pag-btn next-btn" title="Следующая страница">›</button>
         </div>
 
       </div>
 
     </div>
-  </section>
 
-  <!-- УВЕДОМЛЕНИЕ (ВСПЛЫВАЮЩИЙ ТОАСТ) -->
-  <div v-if="toast.show" class="toast-notification">
-    <div class="toast-icon">📡</div>
-    <div class="toast-body">
-      <h5 class="toast-title">Информационное сообщение</h5>
-      <p class="toast-text">{{ toast.message }}</p>
+    <!-- УВЕДОМЛЕНИЯ ОТ БЕКЕНДА -->
+    <div v-if="toast.show" class="toast-notification">
+      <div class="toast-icon">📡</div>
+      <div class="toast-body">
+        <h5 class="toast-title">Информационное сообщение ЦУП</h5>
+        <p class="toast-text">{{ toast.message }}</p>
+      </div>
+      <button type="button" @click="closeToast" class="toast-close-btn">×</button>
     </div>
-    <button type="button" @click="closeToast" class="toast-close-btn">×</button>
-  </div>
+  </section>
 </template>
-
-
 
 <script setup lang="ts">
   import { ref } from 'vue'
 
+  // Описание интерфейса объекта спутника (соответствует вашему C# SatellitesFilterDTO)
   interface Satellite {
     noradId: number
     name: string
   }
 
-  const searchQuery = ref('')
-  const selectedCategory = ref('all')
-  const sortBy = ref('id')
-  const pageSize = ref(25)
-  const currentPage = ref(1)
+  // 1. Переменные для двусторонней связи (v-model) с HTML-полями
+  const searchQuery = ref('')         // Строка поиска по ключевым словам
+  const selectedCategory = ref('all')   // Категория группировки (изначально "all")
+  const sortBy = ref('id')             // Метод сортировки: 'id' (для FiltersById) или 'name' (для FiltersByName)
+  const pageSize = ref(25)            // Количество строк на странице (по умолчанию 25)
+  const currentPage = ref(1)          // Номер текущей страницы пагинации
+
+  // Массив спутников, полученный с бэкенда (изначально пустой)
   const satellites = ref<Satellite[]>([])
 
-  // Настройка всплывающего уведомления
+  // Состояние всплывающего уведомления (Тоаста)
   const toast = ref({
     show: false,
     message: ''
@@ -198,32 +187,39 @@
 
   let toastTimeout: number | null = null
 
-  // Функция для вызова уведомления
+  // Функция для вызова всплывающего окна уведомления
   const showNotification = (msg: string) => {
-    // Если уже висит старый таймер, сбрасываем его
     if (toastTimeout) clearTimeout(toastTimeout)
-
     toast.value.message = msg
     toast.value.show = true
-
-    // Автоматически закрываем окно через 4 секунды (4000 мс)
     toastTimeout = window.setTimeout(() => {
       toast.value.show = false
     }, 4000)
   }
 
-  // Ручное закрытие по крестику
+  // Функция для ручного закрытия уведомления по крестику
   const closeToast = () => {
     toast.value.show = false
     if (toastTimeout) clearTimeout(toastTimeout)
   }
 
-  const fetchSatellites = async () => {
+  // 2. Функция первичного поиска (По большой розовой кнопке)
+  const handleSearch = () => {
     if (selectedCategory.value === 'all') {
       showNotification('Пожалуйста, выберите категорию группировки перед началом поиска!')
       return
     }
 
+    // Сначала синхронно сбрасываем инпут на 1 во Vue для визуального отображения
+    currentPage.value = 1
+
+    // Вызываем сетевой метод и заставляем его слать цифру 1 в аргументе
+    fetchSatellites(1)
+  }
+
+  // 3. Главная функция запроса к .NET-бэкенду
+  // Она принимает точный номер страницы, который нужно отправить в базу данных
+  const fetchSatellites = async (targetPage: number = currentPage.value) => {
     try {
       const endpoint = sortBy.value === 'id'
         ? '/api/v1/GetSatellitesFiltersById'
@@ -231,12 +227,16 @@
 
       const url = new URL(`http://localhost:5000${endpoint}`)
       url.searchParams.append('category', selectedCategory.value)
-      url.searchParams.append('page', currentPage.value.toString())
+
+      /*
+         Мы шлем строго то число, которое пришло в аргументе функции (targetPage)
+         Если вызван поиск, там будет чистая цифра 1. Vue больше не сможет подсунуть другую страницу
+      */
+      url.searchParams.append('page', targetPage.toString())
       url.searchParams.append('pageSize', pageSize.value.toString())
 
       const response = await fetch(url.toString())
 
-      // Перехват 404 ошибки бэкенда (данные закончились)
       if (response.status === 404) {
         showNotification('Вы достигли конца списка. Дальнейших спутников в этой категории не обнаружено.')
         if (currentPage.value > 1) {
@@ -248,7 +248,6 @@
       if (response.ok) {
         const data = await response.json()
 
-        // Перехват если бэкенд прислал пустой массив [] вместо 404
         if (data.length === 0) {
           showNotification('Вы достигли конца списка. Дальнейших спутников в этой категории не обнаружено.')
           if (currentPage.value > 1) {
@@ -266,10 +265,19 @@
     }
   }
 
-  const nextPage = () => { currentPage.value++; fetchSatellites() }
-  const prevPage = () => { if (currentPage.value > 1) { currentPage.value--; fetchSatellites() } }
-</script>
+  // Методы пагинации передают измененное состояние в аргумент явно
+  const nextPage = () => {
+    currentPage.value++
+    fetchSatellites(currentPage.value)
+  }
 
+  const prevPage = () => {
+    if (currentPage.value > 1) {
+      currentPage.value--
+      fetchSatellites(currentPage.value)
+    }
+  }
+</script>
 
 <style scoped>
   .catalog-section {
@@ -279,7 +287,7 @@
   }
 
   /* ==========================================================================
-   БЛОК 1: СТИЛИ ПАНЕЛИ ПОИСКА И ФИЛЬТРОВ (СТРОГИЙ СТИЛЬ)
+   БЛОК 1: СТИЛИ ПАНЕЛИ ПОИСКА И ФИЛЬТРОВ
    ========================================================================= */
   .filters-block {
     background-color: #141414;
@@ -387,7 +395,6 @@
     .btn-search-submit:hover {
       background-color: #ec4899;
       border-color: #ec4899;
-      /* НЕОН УБРАН: нет box-shadow */
     }
 
   /* ==========================================================================
@@ -472,7 +479,6 @@
     .btn-modeling:hover {
       background-color: #ea75a2;
       color: #ffffff;
-      /* НЕОН УБРАН: нет box-shadow */
     }
 
   /* СТИЛИ ПАНЕЛИ СТРАНИЦ (ПАГИНАЦИЯ ПОД ТАБЛИЦЕЙ) */
@@ -541,7 +547,7 @@
       -moz-appearance: textfield;
     }
 
-  /* Адаптивный резиновый переход под небольшие экраны */
+  /* Переход под небольшие экраны */
   @media (max-width: 768px) {
     .filters-row {
       flex-direction: column;
@@ -570,7 +576,7 @@
     width: 100%;
     background-color: #141414; /* Плотный темный фон в цвет блоков */
     border: 1px solid #222222;
-    border-left: 4px solid #ec4899; /* Фирменная розовая акцентная грань */
+    border-left: 4px solid #ec4899; /* Розовая акцентная грань */
     border-radius: 12px;
     padding: 16px 20px;
     display: flex;
