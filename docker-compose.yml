@@ -4,8 +4,7 @@ services:
     build:
       context: .
       dockerfile: OrbitX/Dockerfile
-    ports:
-      - "5000:8080"
+    restart: always
     networks:
       - orbitx-network
     env_file:
@@ -36,10 +35,23 @@ services:
     build:
       context: .
       dockerfile: orbitx.frontend/Dockerfile
-    ports:
-      - "4000:80" 
+    restart: always
     networks:
       - orbitx-network
+
+  proxy:
+    image: nginx:stable-alpine
+    container_name: orbitx-gateway
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - orbitx-network
+    depends_on:
+      - orbitx
+      - orbitx.frontend
 
 volumes:
   postgres_data:

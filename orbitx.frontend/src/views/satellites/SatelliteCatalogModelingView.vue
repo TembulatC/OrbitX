@@ -224,7 +224,7 @@
         ? '/api/v1/GetSatellitesFiltersById'
         : '/api/v1/GetSatellitesFiltersByName'
 
-      const url = new URL(`http://localhost:5000${endpoint}`)
+      const url = new URL(`${window.location.origin}${endpoint}`)
       url.searchParams.append('category', selectedCategory.value)
 
       /*

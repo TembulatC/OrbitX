@@ -18,4 +18,6 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 
 EXPOSE 80
 
+COPY orbitx.frontend/default.conf /etc/nginx/conf.d/default.conf
+
 CMD ["nginx", "-g", "daemon off;"]
