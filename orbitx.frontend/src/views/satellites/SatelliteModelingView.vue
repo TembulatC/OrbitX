@@ -31,7 +31,7 @@
                 Ошибка подключения. Сервер временно не отвечает.
               </template>
               <template v-else-if="syncStatus === 'db_error'">
-                Ошибка подключения. Данные временно не доступны
+                Ошибка подключения. Сервер временно не отвечает.
               </template>
             </p>
           </div>
@@ -198,7 +198,7 @@
     }, 30000)
 
     hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(`http://localhost:5000/ws/satellite`)
+      .withUrl(`${window.location.origin}/ws/satellite`)
       .withAutomaticReconnect()
       .configureLogging(signalR.LogLevel.Warning)
       .build(); (window as any).testConnection = hubConnection

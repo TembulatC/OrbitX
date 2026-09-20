@@ -1,14 +1,15 @@
-using Core.Modules.SGP4Data.Application.Interfaces;
-using Core.Modules.SGP4Data.Application.Services;
-using Core.Modules.SGP4Data.Domain.Interfaces;
-using Core.Modules.SGP4Data.Infrastructure.DBContext;
-using Core.Modules.SGP4Data.Infrastructure.Repositories;
 using Core.Modules.SatelliteData.Application.Interfaces;
 using Core.Modules.SatelliteData.Application.Services;
 using Core.Modules.SatelliteData.Domain.Interfaces;
 using Core.Modules.SatelliteData.Infrastructure.DBContext;
 using Core.Modules.SatelliteData.Infrastructure.HttpClients;
 using Core.Modules.SatelliteData.Infrastructure.Repositories;
+using Core.Modules.SGP4Data.Application.Interfaces;
+using Core.Modules.SGP4Data.Application.Services;
+using Core.Modules.SGP4Data.Domain.Interfaces;
+using Core.Modules.SGP4Data.Infrastructure.DBContext;
+using Core.Modules.SGP4Data.Infrastructure.Repositories;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using OrbitX.BackgroundWorkers;
 using OrbitX.BackgroundWorkers.Helper;
@@ -23,6 +24,27 @@ namespace OrbitX
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            // Регистрируем политику CORS
+            var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
+          
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("OrbitxCorsPolicy", policy =>
+                {
+                    policy.WithOrigins(allowedOrigins ?? new[] { "http://localhost" }) // fallback на случай отсутствия конфига
+                          .AllowAnyMethod()
+                          .AllowAnyHeader()
+                          .AllowCredentials(); // Критически важно для сокетов SignalR
+                });
+            });
+
+            builder.Services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+                options.KnownProxies.Clear();
+                options.KnownNetworks.Clear();
+            });
 
             var customTheme = new AnsiConsoleTheme(new Dictionary<ConsoleThemeStyle, string>
             {
@@ -103,6 +125,8 @@ namespace OrbitX
                 await context.Database.MigrateAsync();
             }
 
+            app.UseForwardedHeaders();
+
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
@@ -110,15 +134,11 @@ namespace OrbitX
                 app.UseSwaggerUI();
             }
 
-            app.UseHttpsRedirection();
+            // app.UseHttpsRedirection();
+
+            app.UseCors("OrbitxCorsPolicy"); // Активация CORS
             app.UseAuthorization();
             app.MapControllers();
-
-            app.UseCors(builder => builder
-                .WithOrigins("http://localhost:4000") // Порт фронтенда
-                .AllowAnyMethod()
-                .AllowAnyHeader()
-                .AllowCredentials()); // Этот флаг для сокетов SignalR
 
             // Выделяем адрес для SignalR
             app.MapHub<SignalRHub>("/ws/satellite");
