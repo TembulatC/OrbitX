@@ -34,7 +34,7 @@
       <div class="footer-right">
         <div class="status-indicator">
           <span class="status-dot"></span>
-          <span class="status-text">Все системы работают в штатном режиме</span>
+          <span class="status-text">Сервис работает стабильно</span>
         </div>
         <div class="footer-links">
           <router-link to="/privacy" class="footer-link">Конфиденциальность</router-link>
@@ -63,7 +63,7 @@
               <span class="support-icon">⚙️</span>
               <div>
                 <h4>Технические проблемы и баги</h4>
-                <p>Если у вас возникли вопросы по падению докер-контейнеров, проксированию Nginx, разрывам SignalR WebSockets или ошибкам парсинга OMM-данных — создайте тикет в нашем репозитории.</p>
+                <p>Если у вас возникли вопросы по падению сервисов, проксированию и безопасности сайта, разрывам сокетов или ошибкам парсинга OMM-данных — создайте тикет в нашем репозитории.</p>
                 <a href="https://github.com/TembulatC/OrbitX/issues" target="_blank" class="support-action">Открыть GitHub Issues →</a>
               </div>
             </div>
@@ -149,6 +149,7 @@
     font-size: 12px;
     font-weight: 500;
     color: #22c55e;
+    margin-bottom: 2px;
   }
 
   @keyframes pulse-dot {
