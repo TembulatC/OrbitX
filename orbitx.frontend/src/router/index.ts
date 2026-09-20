@@ -16,6 +16,11 @@ const routes = [
     component: SatelliteCatalogModelingView
   },
   {
+    path: '/satellites_modeling/:satellite_id',
+    name: 'satellites-modeling',
+    component: () => import('../views/satellites/SatelliteModelingView.vue')
+  },
+  {
     path: '/privacy',
     name: 'privacy',
     component: PrivacyView

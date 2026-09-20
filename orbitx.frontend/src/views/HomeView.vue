@@ -169,6 +169,7 @@
     background-color: transparent;
     color: #ffffff;
     border: 1px solid #475569;
+    font-family: "Exo 2", sans-serif;
   }
 
     .btn-secondary:hover {

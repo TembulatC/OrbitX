@@ -1,9 +1,9 @@
 <template>
   <header class="orbitx-header">
     <div class="container header-wrapper">
-      <a href="/" class="logo-link">
+      <router-link to="/" class="logo-link">
         <img src="@/assets/logo.svg" alt="OrbitX Logo" class="logo-img" />
-      </a>
+      </router-link>
 
       <nav class="nav-menu">
         <!-- Вместо a href используем router-link to -->

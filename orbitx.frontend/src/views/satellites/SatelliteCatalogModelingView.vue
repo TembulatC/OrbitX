@@ -124,8 +124,7 @@
                 <td class="td-id">{{ sat.noradId }}</td>
                 <td class="td-name">{{ sat.name }}</td>
                 <td class="td-action">
-                  <router-link :to="{ path: '/satellites_modeling', query: { s: sat.noradId } }"
-                               class="btn-modeling">
+                  <router-link :to="{ name: 'satellites-modeling', params: { satellite_id: sat.noradId } }" class="btn-modeling">
                     Запустить
                   </router-link>
                 </td>
