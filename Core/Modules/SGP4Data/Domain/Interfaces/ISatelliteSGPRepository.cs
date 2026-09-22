@@ -9,8 +9,8 @@ namespace Core.Modules.SGP4Data.Domain.Interfaces
 {
     public interface ISatelliteSGPRepository
     {
-        Task<SatelliteTLE?> GetTLEByID(int noradId);
+        Task<Satellite?> GetTLEByID(int noradId);
 
-        Task<SatelliteTLE?> GetTLEByName(string satelliteName);
+        Task<Satellite?> GetTLEByName(string satelliteName);
     }
 }

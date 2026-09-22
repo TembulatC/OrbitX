@@ -20,7 +20,7 @@ namespace Core.Modules.SGP4Data.Infrastructure.Repositories
             _cache = cache;
         }
 
-        public async Task<SatelliteTLE?> GetTLEByID(int noradId)
+        public async Task<Satellite?> GetTLEByID(int noradId)
         {
             LogLaunchById(noradId);
 
@@ -34,7 +34,7 @@ namespace Core.Modules.SGP4Data.Infrastructure.Repositories
             string cacheKey = $"omm:{noradId}";
 
             // Проверяем, есть ли уже данные в кеше
-            if (!_cache.TryGetValue(cacheKey, out SatelliteTLE? satelliteTLE))
+            if (!_cache.TryGetValue(cacheKey, out Satellite? satelliteTLE))
             {
                 // Если в кеше нет — ОДИН раз идем в базу данных
                 satelliteTLE = await _dbContext.SatellitesTLE.FindAsync(noradId);
@@ -61,7 +61,7 @@ namespace Core.Modules.SGP4Data.Infrastructure.Repositories
             return satelliteTLE;
         }
 
-        public async Task<SatelliteTLE?> GetTLEByName(string satelliteName)
+        public async Task<Satellite?> GetTLEByName(string satelliteName)
         {
             LogLaunchByName(satelliteName);
 

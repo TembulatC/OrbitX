@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace Core.Modules.SGP4Data.Domain.Models
 {
-    public class SatelliteTLE
+    public class Satellite
     {
-        public SatelliteTLE() { }
+        public Satellite() { }
 
-        public SatelliteTLE(int NORAD_CAT_ID, string OBJECT_NAME, string OBJECT_ID, double MEAN_MOTION, double ECCENTRICITY, double INCLINATION, double RA_OF_ASC_NODE, double ARG_OF_PERICENTER,
+        public Satellite(int NORAD_CAT_ID, string OBJECT_NAME, string OBJECT_ID, double MEAN_MOTION, double ECCENTRICITY, double INCLINATION, double RA_OF_ASC_NODE, double ARG_OF_PERICENTER,
             double MEAN_ANOMALY, int EPHEMERIS_TYPE, string CLASSIFICATION_TYPE, int ELEMENT_SET_NO, int REV_AT_EPOCH, double BSTAR, double MEAN_MOTION_DOT, int MEAN_MOTION_DDOT, string category, DateTime EPOCH, DateTime updatedAt)
         {
             this.NORAD_CAT_ID = NORAD_CAT_ID;
