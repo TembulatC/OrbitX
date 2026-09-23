@@ -8,7 +8,6 @@
 
           <p class="modeling-subtitle" style="margin: 0;">
             Текущий аппарат:
-            <!-- Название спутника появится, как только прилетит первый пакет -->
             <span class="accent-text name-accent" v-if="satelliteData">{{ satelliteData.name }}</span>
             <span class="accent-text" v-else>Определение объекта...</span>
             | NORAD ID: <span class="accent-id">{{ noradId }}</span>
@@ -42,16 +41,23 @@
       <!-- ОСНОВНАЯ СЕТКА ПК-ИНТЕРФЕЙСА -->
       <div class="modeling-grid">
 
-        <!-- ЛЕВАЯ КОЛОНКА: КАРТА -->
-        <div class="map-container-box">
-          <div class="map-placeholder-content">
-            <span class="placeholder-icon">🌍</span>
-            <h3>Интерактивная карта траектории</h3>
-            <p v-if="satelliteData" style="color: #94a3b8">
-              Спутник успешно позиционирован. Ожидание подключения карты...
-            </p>
-            <p v-else style="color: #64748b">Ожидание первичных координат...</p>
+        <!-- ЛЕВАЯ КОЛОНКА: КАРТА + СТАТУС ПОДКЛЮЧЕНИЯ КАРТЫ -->
+        <div class="map-column">
+
+          <div class="map-container-box">
+            <!-- Главный контейнер для Leaflet.js -->
+            <div id="orbitx-leaflet-map"
+                 class="real-map-element"
+                 :class="{ 'map-visible': isMapLoaded }"></div>
           </div>
+
+          <!-- ПЛАШКА СТАТУСА ПОДКЛЮЧЕНИЯ КАРТЫ -->
+          <!-- Показывается при первом подключении, при потере интернета и при любом сбое загрузки тайлов -->
+          <div class="map-status-toast" v-if="showMapConnectingToast">
+            <span class="toast-spinner"></span>
+            <p class="toast-text">Подключение карты...</p>
+          </div>
+
         </div>
 
         <!-- ПРАВАЯ КОЛОНКА: ПАНЕЛЬ МЕСТОПОЛОЖЕНИЯ АППАРАТА -->
@@ -89,8 +95,11 @@
 
           <!-- Техническая плашка частоты обновления пакетов -->
           <div class="update-frequency-box" v-if="satelliteData">
-            <span class="frequency-indicator"></span>
-            <span style="color: #94a3b8">Обновление данных: ~1 раз / сек</span>
+            <span class="frequency-indicator"
+                  :class="syncStatus === 'success' ? 'indicator-success' : 'indicator-error blink-dot'"></span>
+            <span style="color: #94a3b8">
+              Обновление данных: {{ syncStatus === 'success' ? '~1 раз / сек' : '~0 раз / сек' }}
+            </span>
           </div>
         </div>
 
@@ -101,9 +110,11 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch, onUnmounted } from 'vue'
-  import { useRoute, onBeforeRouteLeave } from 'vue-router'
+  import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+  import { useRoute } from 'vue-router'
+  import { onBeforeRouteLeave } from 'vue-router'
   import * as signalR from '@microsoft/signalr'
+  import L from 'leaflet'
 
   interface SGP4DataDTO {
     noradId: number
@@ -117,50 +128,184 @@
 
   const noradId = ref<number>(0)
   const satelliteData = ref<SGP4DataDTO | null>(null)
-
   const syncStatus = ref<'pending' | 'success' | 'reconnecting' | 'error' | 'db_error'>('pending')
-
   const connectionStatus = ref<'connecting' | 'connected' | 'disconnected'>('connecting')
   const statusText = ref('Установка соединения...')
 
-  let hubConnection: signalR.HubConnection | null = null
+  const isMapLoaded = ref<boolean>(false)
 
-  // Идентификаторы бортовых таймеров ЦУП
+  const isMapTileLoading = ref<boolean>(true)
+  const isOnline = ref<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true)
+
+  const showMapConnectingToast = computed(() => {
+    return !isOnline.value || isMapTileLoading.value || !isMapLoaded.value
+  })
+
+  let map: L.Map | null = null
+  let mapTileLayer: L.TileLayer | null = null
+  let satelliteMarker: L.Marker | null = null
+  let orbitPath: L.Polyline | null = null
+
+  const pathCoordinates = ref<L.LatLngExpression[]>([])
+  let hubConnection: signalR.HubConnection | null = null
   let dbTimeoutTimer: number | null = null
   let heartbeatTimer: number | null = null
+  let isFirstPosition = true
+
+  // Хранилище для отслеживания долготы предыдущей полученной точки спутника
+  let prevLongitude: number | null = null
+
+  const handleBrowserOnline = () => {
+    isOnline.value = true
+    // Как только сеть вернулась, пробуем переинициировать загрузку тайлов заново
+    if (mapTileLayer) {
+      isMapTileLoading.value = true
+      mapTileLayer.redraw()
+    }
+  }
+
+  const handleBrowserOffline = () => {
+    isOnline.value = false
+  }
+
+  const initLeafletMap = () => {
+    if (map) {
+      map.remove()
+      map = null
+      mapTileLayer = null
+      satelliteMarker = null
+      orbitPath = null
+    }
+
+    isMapLoaded.value = true
+    isMapTileLoading.value = true
+
+    // Даем Vue один тик на обновление DOM-дерева и очистку плейсхолдера
+    nextTick(() => {
+      // Ограничиваем область карты максимальными координатами планеты
+      const corner1 = L.latLng(-90, -180)
+      const corner2 = L.latLng(90, 180)
+      const bounds = L.latLngBounds(corner1, corner2)
+
+      map = L.map('orbitx-leaflet-map', {
+        center: [0, 0],
+        zoom: 2,
+        minZoom: 1,
+        maxZoom: 15,
+        zoomControl: true,
+        maxBounds: bounds,
+        maxBoundsViscosity: 1.0
+      })
+
+      mapTileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      })
+
+      // Отслеживаем реальное состояние загрузки тайлов, а не момент инициализации карты.
+      // 'loading' срабатывает при каждом запросе новых тайлов (в т.ч. при zoom),
+      // 'load' — когда все запрошенные тайлы догрузились,
+      // 'tileerror' — когда тайл не удалось получить 
+      mapTileLayer.on('loading', () => {
+        isMapTileLoading.value = true
+      })
+      mapTileLayer.on('load', () => {
+        isMapTileLoading.value = false
+      })
+      mapTileLayer.on('tileerror', () => {
+        isMapTileLoading.value = true
+      })
+
+      mapTileLayer.addTo(map)
+
+      orbitPath = L.polyline([], {
+        color: '#ea75a2',
+        weight: 3,
+        opacity: 0.8,
+        dashArray: '5, 5'
+      }).addTo(map)
+
+      // Фикс для дефолтных картинок маркеров Leaflet в Vite
+      delete (L.Icon.Default.prototype as any)._getIconUrl
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: new URL('leaflet/dist/images/marker-icon-2x.png', import.meta.url).href,
+        iconUrl: new URL('leaflet/dist/images/marker-icon.png', import.meta.url).href,
+        shadowUrl: new URL('leaflet/dist/images/marker-shadow.png', import.meta.url).href
+      })
+
+      // Принудительный пересчет размеров контейнера через таймаут
+      setTimeout(() => {
+        if (map) {
+          map.invalidateSize()
+          map.setView([0, 0], 2)
+        }
+      }, 100)
+    })
+  }
+
+  const updateSatelliteOnMap = (lat: number, lng: number) => {
+    if (!map) return
+
+    const newPos = L.latLng(lat, lng)
+
+    if (!satelliteMarker) {
+      const satelliteIcon = L.divIcon({
+        className: 'custom-satellite-icon',
+        html: `<div class="satellite-ping-core"></div><div class="satellite-ping-wave"></div>`,
+        iconSize: [15, 15],
+        iconAnchor: [7.5, 7.5]
+      })
+
+      satelliteMarker = L.marker(newPos, { icon: satelliteIcon }).addTo(map)
+    } else {
+      satelliteMarker.setLatLng(newPos)
+    }
+
+    if (prevLongitude !== null) {
+      // Если дельта по долготе больше 180 градусов, значит произошел переход через край карты (180°/-180°)
+      // Спутник пошел на новый круг, полностью очищаем накопленные координаты траектории
+      if (Math.abs(lng - prevLongitude) > 180) {
+        pathCoordinates.value = []
+        console.log('[ЦУП] Спутник завершил виток. Траектория сброшена для нового круга.')
+      }
+    }
+    // Обновляем значение долготы текущим шагом
+    prevLongitude = lng
+
+    pathCoordinates.value.push(newPos)
+
+    if (orbitPath) {
+      orbitPath.setLatLngs(pathCoordinates.value)
+    }
+
+    if (isFirstPosition) {
+      map.setView(newPos, 3, { animate: true })
+      isFirstPosition = false
+    }
+  }
 
   const clearDbTimeout = () => {
-    if (dbTimeoutTimer) {
-      clearTimeout(dbTimeoutTimer)
-      dbTimeoutTimer = null
-    }
+    if (dbTimeoutTimer) { clearTimeout(dbTimeoutTimer); dbTimeoutTimer = null; }
   }
 
   const clearHeartbeatTimeout = () => {
-    if (heartbeatTimer) {
-      clearTimeout(heartbeatTimer)
-      heartbeatTimer = null
-    }
+    if (heartbeatTimer) { clearTimeout(heartbeatTimer); heartbeatTimer = null; }
   }
 
-  /*
-     Если интернет моргнул и координаты перестали идти, этот таймер сработает
-     ровно через 3 секунды бездействия и вернет статус в серый режим ожидания "Подключение...",
-  */
   const resetHeartbeatTimeout = () => {
     clearHeartbeatTimeout()
-
     heartbeatTimer = window.setTimeout(() => {
       if (syncStatus.value === 'success') {
         syncStatus.value = 'pending'
         console.warn('[ЦУП] Поток координат приостановлен. Ожидание восстановления связи...')
       }
-    }, 3000)
+    }, 4000)
   }
 
   const stopSignalR = async () => {
     clearDbTimeout()
     clearHeartbeatTimeout()
+    pathCoordinates.value = []
+    isFirstPosition = true
 
     if (hubConnection) {
       try {
@@ -171,9 +316,6 @@
         console.warn('[SignalR] Мягкий перехват при остановке группы/сокета:', err)
       } finally {
         hubConnection = null
-        if ((window as any).testConnection) {
-          (window as any).testConnection = null
-        }
         connectionStatus.value = 'disconnected'
         satelliteData.value = null
         syncStatus.value = 'pending'
@@ -183,13 +325,15 @@
 
   const startSatelliteTracking = async (id: number) => {
     await stopSignalR()
+    await nextTick()
+
+    initLeafletMap()
 
     noradId.value = id
     connectionStatus.value = 'connecting'
     syncStatus.value = 'pending'
     statusText.value = 'Установка соединения...'
 
-    // 30-секундный таймер на случай, если лежит база данных
     dbTimeoutTimer = window.setTimeout(() => {
       if (syncStatus.value === 'pending') {
         syncStatus.value = 'db_error'
@@ -201,34 +345,36 @@
       .withUrl(`${window.location.origin}/ws/satellite`)
       .withAutomaticReconnect()
       .configureLogging(signalR.LogLevel.Warning)
-      .build(); (window as any).testConnection = hubConnection
+      .build()
 
     hubConnection.on('ReceivePosition', (data: SGP4DataDTO) => {
       clearDbTimeout()
-
       satelliteData.value = data
 
       if (syncStatus.value !== 'success') {
         syncStatus.value = 'success'
       }
 
+      updateSatelliteOnMap(data.latitude, data.longitude)
       resetHeartbeatTimeout()
     })
 
-    hubConnection.onreconnecting((error) => {
+    hubConnection.onreconnecting(() => {
       clearDbTimeout()
       clearHeartbeatTimeout()
       syncStatus.value = 'reconnecting'
       connectionStatus.value = 'connecting'
       statusText.value = 'Переподключение...'
+      satelliteData.value = null
     })
 
-    hubConnection.onclose((error) => {
+    hubConnection.onclose(() => {
       clearDbTimeout()
       clearHeartbeatTimeout()
       syncStatus.value = 'error'
       connectionStatus.value = 'disconnected'
       statusText.value = 'Соединение потеряно.'
+      satelliteData.value = null
     })
 
     try {
@@ -264,8 +410,18 @@
     { immediate: true }
   )
 
+  onMounted(() => {
+    window.addEventListener('online', handleBrowserOnline)
+    window.addEventListener('offline', handleBrowserOffline)
+  })
+
   onUnmounted(() => {
+    window.removeEventListener('online', handleBrowserOnline)
+    window.removeEventListener('offline', handleBrowserOffline)
     stopSignalR()
+    if (map) {
+      map.remove()
+    }
   })
 </script>
 
@@ -328,7 +484,6 @@
     transition: all 0.3s ease;
   }
 
-  /* 1. Состояние ожидания (Серый) */
   .badge-pending {
     background-color: rgba(148, 163, 184, 0.02);
     border: 1px solid rgba(148, 163, 184, 0.12);
@@ -338,7 +493,6 @@
       color: #94a3b8;
     }
 
-  /* 2. Состояние успеха (Зеленый) */
   .badge-success {
     background-color: rgba(34, 197, 94, 0.03);
     border: 1px solid rgba(34, 197, 94, 0.15);
@@ -348,7 +502,6 @@
       color: #22c55e;
     }
 
-  /* 3. Предупреждение (Потеря связи посреди сессии) */
   .badge-reconnecting {
     background-color: rgba(234, 179, 8, 0.03);
     border: 1px solid rgba(234, 179, 8, 0.15);
@@ -358,7 +511,6 @@
       color: #eab308;
     }
 
-  /* 4. Состояние ошибки (Аварийно-красный) */
   .badge-error {
     background-color: rgba(239, 68, 68, 0.03);
     border: 1px solid rgba(239, 68, 68, 0.15);
@@ -406,41 +558,112 @@
     gap: 24px;
   }
 
-  .map-container-box {
+  .map-column {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .map-container-box {
     background-color: #141414;
     border: 1px solid #222222;
     border-radius: 16px;
     height: 550px;
-    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .real-map-element {
+    width: 100%;
+    height: 100%;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  .map-status-toast {
+    align-self: flex-start;
+    background-color: rgba(20, 20, 20, 0.9);
+    border: 1px solid rgba(234, 117, 162, 0.3);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    padding: 10px 18px;
+    border-radius: 30px;
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    white-space: nowrap;
+  }
+
+  .custom-satellite-icon {
     position: relative;
   }
 
-  .map-placeholder-content {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
+  .satellite-ping-core {
+    width: 10px;
+    height: 10px;
+    background-color: #ea75a2;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    box-shadow: 0 0 10px #ea75a2;
   }
 
-  .placeholder-icon {
-    font-size: 54px;
-    margin-bottom: 16px;
+  .satellite-ping-wave {
+    width: 30px;
+    height: 30px;
+    border: 2px solid #ea75a2;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: satellite-pulse 1.8s infinite ease-out;
+    opacity: 0;
   }
 
-  .map-placeholder-content h3 {
-    color: #ffffff;
-    font-size: 18px;
-    font-weight: 700;
-    margin-bottom: 10px;
+  @keyframes satellite-pulse {
+    0% {
+      transform: translate(-50%, -50%) scale(0.3);
+      opacity: 0.8;
+    }
+
+    100% {
+      transform: translate(-50%, -50%) scale(1.5);
+      opacity: 0;
+    }
+  }
+
+  .toast-text {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #e2e8f0;
+    white-space: nowrap;
+  }
+
+  .toast-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(234, 117, 162, 0.2);
+    border-top-color: #ea75a2;
+    border-radius: 50%;
+    animation: toast-spin 0.8s linear infinite;
+  }
+
+  @keyframes toast-spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .telemetry-sidebar {
     width: 340px;
+    height: 548px;
     background-color: #141414;
     border: 1px solid #222222;
     border-radius: 16px;
@@ -516,8 +739,20 @@
   .frequency-indicator {
     width: 6px;
     height: 6px;
-    background-color: #22c55e;
     border-radius: 50%;
+    transition: background-color 0.3s ease;
+  }
+
+  .indicator-success {
+    background-color: #22c55e;
+  }
+
+  .indicator-error {
+    background-color: #ef4444;
+  }
+
+  .blink-dot {
+    animation: pulse-animation 0.8s infinite ease-in-out;
   }
 
   @keyframes pulse-animation {
@@ -548,6 +783,10 @@
       flex-direction: column;
     }
 
+    .map-column {
+      width: 100%;
+    }
+
     .telemetry-sidebar {
       width: 100%;
     }
@@ -556,4 +795,43 @@
       height: 400px;
     }
   }
+</style>
+
+<!-- Отдельный неизолированный тег для стилизации элементов Leaflet -->
+<style>
+  @import "leaflet/dist/leaflet.css";
+
+  /* Базовый цвет подложки — черный */
+  .leaflet-container {
+    background-color: #000000 !important;
+  }
+
+  .leaflet-tile-container img {
+    filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%) saturate(30%);
+  }
+
+  /* Сокрытие строки копирайта */
+  .leaflet-control-attribution {
+    display: none !important;
+  }
+
+  /* Тёмные кнопки зума */
+  .leaflet-control-zoom a {
+    color: #ffffff !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-decoration: none !important;
+    background-color: #141414 !important;
+    border: 1px solid #222222 !important;
+    border-bottom: none !important;
+  }
+
+    .leaflet-control-zoom a:last-child {
+      border-bottom: 1px solid #222222 !important;
+    }
+
+    .leaflet-control-zoom a:hover {
+      background-color: #1e1e1e !important;
+    }
 </style>
