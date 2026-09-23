@@ -41,25 +41,21 @@
       <!-- ОСНОВНАЯ СЕТКА ПК-ИНТЕРФЕЙСА -->
       <div class="modeling-grid">
 
-        <!-- ЛЕВАЯ КОЛОНКА: ИНТЕРАКТИВНАЯ КАРТА LEAFLET -->
-        <div class="map-container-box">
+        <!-- ЛЕВАЯ КОЛОНКА: КАРТА + СТАТУС ПОДКЛЮЧЕНИЯ КАРТЫ -->
+        <div class="map-column">
 
-          <!-- Главный контейнер для Leaflet.js -->
-          <div id="orbitx-leaflet-map"
-               class="real-map-element"
-               :class="{ 'map-visible': isMapLoaded }"></div>
-
-          <!-- ПЛЕЙСХОЛДЕР -->
-          <div class="map-placeholder-content" v-if="!isMapLoaded">
-            <span class="placeholder-icon">🌍</span>
-            <h3>Interactive Trajectory Map</h3>
-            <p style="color: #64748b">Загрузка карты...</p>
+          <div class="map-container-box">
+            <!-- Главный контейнер для Leaflet.js -->
+            <div id="orbitx-leaflet-map"
+                 class="real-map-element"
+                 :class="{ 'map-visible': isMapLoaded }"></div>
           </div>
 
-          <!-- УВЕДОМЛЕНИЕ: Высвечивается поверх карты, пока SignalR не прислал первую точку -->
-          <div class="satellite-wait-toast" v-if="isMapLoaded && !satelliteData">
+          <!-- ПЛАШКА СТАТУСА ПОДКЛЮЧЕНИЯ КАРТЫ -->
+          <!-- Показывается при первом подключении, при потере интернета и при любом сбое загрузки тайлов -->
+          <div class="map-status-toast" v-if="showMapConnectingToast">
             <span class="toast-spinner"></span>
-            <p class="toast-text">Карта готова. Инициализация координат...</p>
+            <p class="toast-text">Подключение карты...</p>
           </div>
 
         </div>
@@ -114,7 +110,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch, onUnmounted, nextTick } from 'vue'
+  import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
   import { useRoute } from 'vue-router'
   import { onBeforeRouteLeave } from 'vue-router'
   import * as signalR from '@microsoft/signalr'
@@ -137,7 +133,16 @@
   const statusText = ref('Установка соединения...')
 
   const isMapLoaded = ref<boolean>(false)
+
+  const isMapTileLoading = ref<boolean>(true)
+  const isOnline = ref<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true)
+
+  const showMapConnectingToast = computed(() => {
+    return !isOnline.value || isMapTileLoading.value || !isMapLoaded.value
+  })
+
   let map: L.Map | null = null
+  let mapTileLayer: L.TileLayer | null = null
   let satelliteMarker: L.Marker | null = null
   let orbitPath: L.Polyline | null = null
 
@@ -150,15 +155,30 @@
   // Хранилище для отслеживания долготы предыдущей полученной точки спутника
   let prevLongitude: number | null = null
 
+  const handleBrowserOnline = () => {
+    isOnline.value = true
+    // Как только сеть вернулась, пробуем переинициировать загрузку тайлов заново
+    if (mapTileLayer) {
+      isMapTileLoading.value = true
+      mapTileLayer.redraw()
+    }
+  }
+
+  const handleBrowserOffline = () => {
+    isOnline.value = false
+  }
+
   const initLeafletMap = () => {
     if (map) {
       map.remove()
       map = null
+      mapTileLayer = null
       satelliteMarker = null
       orbitPath = null
     }
 
     isMapLoaded.value = true
+    isMapTileLoading.value = true
 
     // Даем Vue один тик на обновление DOM-дерева и очистку плейсхолдера
     nextTick(() => {
@@ -177,9 +197,25 @@
         maxBoundsViscosity: 1.0
       })
 
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      mapTileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(map);
+      })
+
+      // Отслеживаем реальное состояние загрузки тайлов, а не момент инициализации карты.
+      // 'loading' срабатывает при каждом запросе новых тайлов (в т.ч. при zoom),
+      // 'load' — когда все запрошенные тайлы догрузились,
+      // 'tileerror' — когда тайл не удалось получить 
+      mapTileLayer.on('loading', () => {
+        isMapTileLoading.value = true
+      })
+      mapTileLayer.on('load', () => {
+        isMapTileLoading.value = false
+      })
+      mapTileLayer.on('tileerror', () => {
+        isMapTileLoading.value = true
+      })
+
+      mapTileLayer.addTo(map)
 
       orbitPath = L.polyline([], {
         color: '#ea75a2',
@@ -374,7 +410,14 @@
     { immediate: true }
   )
 
+  onMounted(() => {
+    window.addEventListener('online', handleBrowserOnline)
+    window.addEventListener('offline', handleBrowserOffline)
+  })
+
   onUnmounted(() => {
+    window.removeEventListener('online', handleBrowserOnline)
+    window.removeEventListener('offline', handleBrowserOffline)
     stopSignalR()
     if (map) {
       map.remove()
@@ -515,8 +558,15 @@
     gap: 24px;
   }
 
-  .map-container-box {
+  .map-column {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .map-container-box {
     background-color: #141414;
     border: 1px solid #222222;
     border-radius: 16px;
@@ -532,30 +582,17 @@
     visibility: visible !important;
   }
 
-  .map-placeholder-content {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 2;
+  .map-status-toast {
+    align-self: flex-start;
+    background-color: rgba(20, 20, 20, 0.9);
+    border: 1px solid rgba(234, 117, 162, 0.3);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    padding: 10px 18px;
+    border-radius: 30px;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    text-align: center;
-    width: 100%;
-  }
-
-  .placeholder-icon {
-    font-size: 54px;
-    margin-bottom: 16px;
-  }
-
-  .map-placeholder-content h3 {
-    color: #ffffff;
-    font-size: 18px;
-    font-weight: 700;
-    margin-bottom: 10px;
+    gap: 12px;
+    white-space: nowrap;
   }
 
   .custom-satellite-icon {
@@ -601,24 +638,6 @@
     }
   }
 
-  .satellite-wait-toast {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(20, 20, 20, 0.9);
-    border: 1px solid rgba(234, 117, 162, 0.3);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
-    padding: 12px 20px;
-    border-radius: 30px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    z-index: 10;
-    pointer-events: none;
-    animation: fade-in-up 0.4s ease forwards;
-  }
-
   .toast-text {
     margin: 0;
     font-size: 12px;
@@ -642,20 +661,9 @@
     }
   }
 
-  @keyframes fade-in-up {
-    from {
-      opacity: 0;
-      transform: translate(-50%, 10px);
-    }
-
-    to {
-      opacity: 1;
-      transform: translate(-50%, 0);
-    }
-  }
-
   .telemetry-sidebar {
     width: 340px;
+    height: 548px;
     background-color: #141414;
     border: 1px solid #222222;
     border-radius: 16px;
@@ -773,6 +781,10 @@
 
     .modeling-grid {
       flex-direction: column;
+    }
+
+    .map-column {
+      width: 100%;
     }
 
     .telemetry-sidebar {
