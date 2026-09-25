@@ -2,7 +2,7 @@
 
 namespace OrbitX.Controllers
 {
-    public partial class TLEController
+    public partial class SatelliteDataController
     {
         #region AddSatelliteData
 

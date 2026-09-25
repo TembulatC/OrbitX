@@ -2,7 +2,7 @@
   <header class="orbitx-header">
     <div class="container header-wrapper">
       <router-link to="/" class="logo-link">
-        <img src="@/assets/logo.svg" alt="OrbitX Logo" class="logo-img" />
+        <img src="@/assets/logo/logo.svg" alt="OrbitX Logo" class="logo-img" />
       </router-link>
 
       <nav class="nav-menu">

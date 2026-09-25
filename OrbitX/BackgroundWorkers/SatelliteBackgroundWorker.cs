@@ -160,7 +160,7 @@ namespace OrbitX.BackgroundWorkers
                 {
                     try
                     {
-                        using (LogContext.PushProperty("RequestSource", "Worker"))
+                        using (LogContext.PushProperty("RequestSource", "Worker or Special"))
                         {
                             // Scope на каждом такте внутри цикла while, чтобы EF Core очищал соеднинение с базой PostgreSQL!
                             using var scope = _serviceProvider.CreateScope();
