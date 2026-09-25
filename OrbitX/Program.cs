@@ -65,7 +65,7 @@ namespace OrbitX
                     outputTemplate: "[{Timestamp:HH:mm:ss}] [{Level:u4}] [{SourceContext}] {Message:lj}{NewLine}{Exception}",
                     applyThemeToRedirectedOutput: true
                  )
-                 .Filter.ByExcluding("RequestSource = 'Worker' and @l in ['Information', 'Debug', 'Verbose']")
+                 .Filter.ByExcluding("RequestSource = 'Worker or Special' and @l in ['Information', 'Debug', 'Verbose']")
                  .CreateLogger();
 
             Log.Information("Start OrbitX");

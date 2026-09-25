@@ -39,8 +39,8 @@ namespace Core.Modules.SatelliteData.Infrastructure.Repositories
                 {
                     // Сохраняем в кеш
                     var cacheOptions = new MemoryCacheEntryOptions()
-                    // Категория удалится из памяти через 2 часа
-                    .SetAbsoluteExpiration(TimeSpan.FromHours(2))
+                    // Категория удалится из памяти через 30 минут
+                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(30))
                     // Если эту категорию никто не смотрел 15 минут — выкидываем ее, чтобы не забивать ОЗУ сервера
                     .SetSlidingExpiration(TimeSpan.FromMinutes(15))
                     // Задаем высокий приоритет, чтобы сборщик мусора (GC) не снес ее принудительно
@@ -56,6 +56,8 @@ namespace Core.Modules.SatelliteData.Infrastructure.Repositories
             // Делаем пагинацию прямо в памяти над списком ID
             int skipCount = (page - 1) * pageSize;
             var pageIds = satellitesIdsList.Skip(skipCount).Take(pageSize).ToList();
+
+            if (pageIds == null || !pageIds.Any()) return new List<Satellite>();
 
             // Идем в базу ОДИН раз и по индексу забираем полные данные
             var satellitesList = await _dbContext.Satellites
@@ -90,8 +92,8 @@ namespace Core.Modules.SatelliteData.Infrastructure.Repositories
                 {
                     // Сохраняем в кеш 
                     var cacheOptions = new MemoryCacheEntryOptions()
-                    // Категория удалится из памяти через 2 часа
-                    .SetAbsoluteExpiration(TimeSpan.FromHours(2))
+                    // Категория удалится из памяти через 30 минут
+                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(30))
                     // Если эту категорию никто не смотрел 15 минут — выкидываем ее, чтобы не забивать ОЗУ сервера
                     .SetSlidingExpiration(TimeSpan.FromMinutes(15))
                     // Задаем высокий приоритет, чтобы сборщик мусора (GC) не снес ее принудительно
@@ -107,6 +109,8 @@ namespace Core.Modules.SatelliteData.Infrastructure.Repositories
             // Делаем пагинацию прямо в памяти над списком ID
             int skipCount = (page - 1) * pageSize;
             var pageIds = satellitesIdsList.Skip(skipCount).Take(pageSize).ToList();
+
+            if (pageIds == null || !pageIds.Any()) return new List<Satellite>();
 
             // Идем в базу ОДИН раз и по индексу забираем полные данные
             var satellitesList = await _dbContext.Satellites

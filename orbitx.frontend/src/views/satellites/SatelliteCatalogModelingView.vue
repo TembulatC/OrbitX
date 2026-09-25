@@ -5,14 +5,14 @@
       <!-- 1 БЛОК — ПАНЕЛЬ ФИЛЬТРОВ И ПОИСКА -->
       <div class="filters-block">
 
-        <!-- Ряд 1: Главный поиск + отдельная маленькая квадратная кнопка поиска справа -->
+        <!-- Ряд 1: Поиск по ID/названию + кнопка-лупа -->
         <div class="filters-row row-one">
           <div class="main-search">
-            <input v-model="searchQuery" type="text" placeholder="Поиск спутника по названию или ID..." class="form-input" @keyup.enter="handleSearch" />
+            <input v-model="searchQuery" type="text" placeholder="Поиск спутника по названию или ID..." class="form-input" @keyup.enter="handleTopSearch" />
           </div>
-          <!-- Кнопка-лупа теперь пока просто картинка, ничего не вызывает -->
-          <button type="button" class="btn-search-small" title="Найти по названию/ID">
-            🔍
+          <!-- Кнопка-поиск: пределяет число это или текст и дергает нужный метод API -->
+          <button type="button" class="btn-search-small" title="Найти по названию/ID" @click="handleTopSearch">
+            ПОИСК
           </button>
         </div>
 
@@ -133,7 +133,7 @@
           </table>
         </div>
 
-        <!-- ПАНЕЛЬ ПОСТРАНИЧНОЙ НАВИГАЦИИ (Под таблицей) -->
+        <!-- ПАНЕЛЬ ПОСТРАНИЧНОЙ НАВИГАЦИИ -->
         <div v-if="satellites.length > 0" class="pagination-panel">
           <button type="button" @click="prevPage" class="pag-btn prev-btn" title="Предыдущая страница">‹</button>
           <div class="pag-input-wrapper">
@@ -151,7 +151,7 @@
     <div v-if="toast.show" class="toast-notification">
       <div class="toast-icon">📡</div>
       <div class="toast-body">
-        <h5 class="toast-title">Информационное сообщение ЦУП</h5>
+        <h5 class="toast-title">Информационное сообщение</h5>
         <p class="toast-text">{{ toast.message }}</p>
       </div>
       <button type="button" @click="closeToast" class="toast-close-btn">×</button>
@@ -162,14 +162,14 @@
 <script setup lang="ts">
   import { ref } from 'vue'
 
-  // Описание интерфейса объекта спутника (соответствует вашему C# SatellitesFilterDTO)
+  // Описание интерфейса объекта спутника
   interface Satellite {
     noradId: number
     name: string
   }
 
   // 1. Переменные для двусторонней связи (v-model) с HTML-полями
-  const searchQuery = ref('')         // Строка поиска по ключевым словам
+  const searchQuery = ref('')         // Строка поиска по ключевым словам (верхнее поле: ID или имя)
   const selectedCategory = ref('all')   // Категория группировки (изначально "all")
   const sortBy = ref('id')             // Метод сортировки: 'id' (для FiltersById) или 'name' (для FiltersByName)
   const pageSize = ref(25)            // Количество строк на странице (по умолчанию 25)
@@ -178,7 +178,7 @@
   // Массив спутников, полученный с бэкенда (изначально пустой)
   const satellites = ref<Satellite[]>([])
 
-  // Состояние всплывающего уведомления (Тоаста)
+  // Состояние всплывающего уведомления
   const toast = ref({
     show: false,
     message: ''
@@ -202,10 +202,112 @@
     if (toastTimeout) clearTimeout(toastTimeout)
   }
 
+  // Ответ бэкенда содержит больше полей, чем нужно таблице (долгота/широта/высота)
+  interface SGP4DataDTO {
+    noradId: number
+    name: string
+    longitude?: number
+    latitude?: number
+    altitude?: number
+  }
+
+  // Берём из DTO только то, что реально нужно таблице
+  const mapToSatellite = (dto: SGP4DataDTO): Satellite => ({
+    noradId: dto.noradId,
+    name: dto.name
+  })
+
+  // Проверка: можно ли строку целиком превратить в число (NORAD ID)
+  // Пустая строка и строки с "мусором" числом не считаются
+  const isNoradId = (value: string): boolean => {
+    if (value.trim() === '') return false
+    return !isNaN(Number(value)) && !isNaN(parseFloat(value))
+  }
+
+  // Главный обработчик верхнего поиска
+  const handleTopSearch = async () => {
+    const query = searchQuery.value.trim()
+
+    if (query === '') {
+      showNotification('Введите название спутника или NORAD ID для поиска')
+      return
+    }
+
+    currentPage.value = 1
+
+    if (isNoradId(query)) {
+      await fetchSatelliteById(Number(query))
+    } else {
+      await fetchSatelliteByName(query)
+    }
+  }
+
+  // Запрос спутника по NORAD ID → GetDataById
+  const fetchSatelliteById = async (noradId: number) => {
+    try {
+      const url = new URL(`${window.location.origin}/api/v1/GetDataById`)
+      url.searchParams.append('noradId', noradId.toString())
+
+      const response = await fetch(url.toString())
+
+      if (response.status === 404) {
+        showNotification(`Спутник с NORAD ID ${noradId} не найден`)
+        satellites.value = []
+        return
+      }
+
+      if (response.ok) {
+        const data = await response.json()
+        // Бэкенд может вернуть как один объект, так и массив — приводим к единому виду
+        const list: SGP4DataDTO[] = Array.isArray(data) ? data : [data]
+        satellites.value = list.map(mapToSatellite)
+        return
+      }
+
+      // Любой другой неуспешный статус (400, 500 и т.д.) — показываем явно
+      const bodyText = await response.text().catch(() => '')
+      console.error('Ошибка бэкенда:', response.status, response.statusText, bodyText)
+      showNotification(`Не удалось получить данные о спутнике (код ${response.status})`)
+    } catch (error) {
+      console.error('Не удалось связаться с сервером', error)
+      showNotification('Ошибка соединения с сервером')
+    }
+  }
+
+  // Запрос спутника по названию → GetDataByName
+  const fetchSatelliteByName = async (name: string) => {
+    try {
+      const url = new URL(`${window.location.origin}/api/v1/GetDataByName`)
+      url.searchParams.append('satelliteName', name)
+
+      const response = await fetch(url.toString())
+
+      if (response.status === 404) {
+        showNotification(`Спутник «${name}» не найден.`)
+        satellites.value = []
+        return
+      }
+
+      if (response.ok) {
+        const data = await response.json()
+        const list: SGP4DataDTO[] = Array.isArray(data) ? data : [data]
+        satellites.value = list.map(mapToSatellite)
+        return
+      }
+
+      const bodyText = await response.text().catch(() => '')
+      console.error('Ошибка бэкенда:', response.status, response.statusText, bodyText)
+      showNotification(`Не удалось получить данные о спутнике (код ${response.status}).`)
+    } catch (error) {
+      console.error('Не удалось связаться с сервером .NET:', error)
+      showNotification('Ошибка соединения с сервером.')
+    }
+  }
+
   // 2. Функция первичного поиска (По большой розовой кнопке)
   const handleSearch = () => {
     if (selectedCategory.value === 'all') {
-      showNotification('Пожалуйста, выберите категорию группировки перед началом поиска!')
+      showNotification('Пожалуйста, выберите категорию спутников перед началом поиска')
       return
     }
 
@@ -216,7 +318,7 @@
     fetchSatellites(1)
   }
 
-  // 3. Главная функция запроса к .NET-бэкенду
+  // 3. Главная функция запроса
   // Она принимает точный номер страницы, который нужно отправить в базу данных
   const fetchSatellites = async (targetPage: number = currentPage.value) => {
     try {
@@ -229,7 +331,7 @@
 
       /*
          Мы шлем строго то число, которое пришло в аргументе функции (targetPage)
-         Если вызван поиск, там будет чистая цифра 1. Vue больше не сможет подсунуть другую страницу
+         Если вызван поиск, там будет чистая цифра 1. Vue не сможет подсунуть другую страницу
       */
       url.searchParams.append('page', targetPage.toString())
       url.searchParams.append('pageSize', pageSize.value.toString())
@@ -237,7 +339,7 @@
       const response = await fetch(url.toString())
 
       if (response.status === 404) {
-        showNotification('Вы достигли конца списка. Дальнейших спутников в этой категории не обнаружено.')
+        showNotification('Вы достигли конца списка. Дальнейших спутников в этой категории не обнаружено')
         if (currentPage.value > 1) {
           currentPage.value--
         }
@@ -248,7 +350,7 @@
         const data = await response.json()
 
         if (data.length === 0) {
-          showNotification('Вы достигли конца списка. Дальнейших спутников в этой категории не обнаружено.')
+          showNotification('Вы достигли конца списка. Дальнейших спутников в этой категории не обнаружено')
           if (currentPage.value > 1) {
             currentPage.value--
           }
@@ -256,11 +358,16 @@
         }
 
         satellites.value = data
-      } else {
-        console.error('Ошибка бэкенда:', response.statusText)
+        return
       }
+
+      // Любой другой неуспешный статус (400, 500 и т.д.) — показываем явно
+      const bodyText = await response.text().catch(() => '')
+      console.error('Ошибка бэкенда:', response.status, response.statusText, bodyText)
+      showNotification(`Не удалось загрузить список спутников (код ${response.status})`)
     } catch (error) {
-      console.error('Не удалось связаться с сервером .NET:', error)
+      console.error('Не удалось связаться с сервером', error)
+      showNotification('Ошибка соединения с сервером')
     }
   }
 
@@ -285,9 +392,6 @@
     padding: 60px 0;
   }
 
-  /* ==========================================================================
-   БЛОК 1: СТИЛИ ПАНЕЛИ ПОИСКА И ФИЛЬТРОВ
-   ========================================================================= */
   .filters-block {
     background-color: #141414;
     border: 1px solid #222222;
@@ -310,20 +414,22 @@
     flex-grow: 1;
   }
 
-  /* Маленькая квадратная кнопка поиска из верхнего ряда */
   .btn-search-small {
-    width: 42px;
-    height: 42px;
+    color: #fff;
+    cursor: pointer;
     background-color: #1e1e1e;
     border: 2px solid #2d2d2d;
     border-radius: 8px;
-    color: #ffffff;
-    font-size: 16px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    align-items: center;
+    width: 107.88px;
+    height: 42px;
+    font-size: 16px;
+    transition: all .2s;
+    display: flex;
+    padding-bottom: 1px;
+    font-family: "Exo 2", sans-serif;
+    font-weight: 600;
   }
 
     .btn-search-small:hover {
@@ -351,7 +457,7 @@
     background-color: #1e1e1e;
     border: 2px solid #2d2d2d;
     border-radius: 8px;
-    padding: 0 16px; /* Внутренний отступ добавлен, текст больше не слипается */
+    padding: 0 16px;
     color: #ffffff;
     font-size: 14px;
     outline: none;
@@ -375,7 +481,6 @@
       border-color: #ea75a2;
     }
 
-  /* Большая прямоугольная кнопка "Поиск" во втором ряду */
   .btn-search-submit {
     height: 42px;
     padding: 0 28px;
@@ -387,7 +492,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    margin-top: 1px; /* Выравнивание кнопки по сетке */
+    margin-top: 1px;
     font-family: "Exo 2", sans-serif;
   }
 
@@ -396,9 +501,6 @@
       border-color: #ec4899;
     }
 
-  /* ==========================================================================
-   БЛОК 2: СТИЛИ ТАБЛИЦЫ И ПАНЕЛИ СТРАНИЦ
-   ========================================================================== */
   .table-block {
     background-color: #141414;
     border: 1px solid #222222;
@@ -458,7 +560,6 @@
     text-align: center;
   }
 
-  /* Кнопка запуска моделирования спутника */
   .btn-modeling {
     display: inline-flex;
     align-items: center;
@@ -480,7 +581,6 @@
       color: #ffffff;
     }
 
-  /* СТИЛИ ПАНЕЛИ СТРАНИЦ (ПАГИНАЦИЯ ПОД ТАБЛИЦЕЙ) */
   .pagination-panel {
     display: flex;
     justify-content: center;
@@ -491,7 +591,6 @@
     background-color: #141414;
   }
 
-  /* Квадратные кнопки-стрелочки < и > */
   .pag-btn {
     width: 40px;
     height: 40px;
@@ -570,12 +669,12 @@
   .toast-notification {
     position: fixed;
     bottom: 40px;
-    right: 40px; /* Размещаем в правом нижнем углу ПК-экрана */
+    right: 40px;
     max-width: 360px;
     width: 100%;
-    background-color: #141414; /* Плотный темный фон в цвет блоков */
+    background-color: #141414;
     border: 1px solid #222222;
-    border-left: 4px solid #ec4899; /* Розовая акцентная грань */
+    border-left: 4px solid #cf4444;
     border-radius: 12px;
     padding: 16px 20px;
     display: flex;

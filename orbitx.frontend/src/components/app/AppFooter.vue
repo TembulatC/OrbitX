@@ -10,18 +10,19 @@
 
             <!-- 1. GitHub -->
             <a href="https://github.com/TembulatC/OrbitX" target="_blank" class="social-link github-link" title="Открыть GitHub проекта">
-              <img src="@/assets/github-logo.svg" alt="GitHub" class="social-icon" />
+              <img src="@/assets/logo/github-logo.svg" alt="GitHub" class="social-icon" />
             </a>
 
             <!-- 2. ТЕЛЕГРАМ -->
             <a href="https://t.me/TKunjut" target="_blank" class="social-link" title="Написать в Telegram">
-              <img src="@/assets/telegram-logo.svg" alt="Telegram" class="social-icon" />
+              <img src="@/assets/logo/telegram-logo.svg" alt="Telegram" class="social-icon" />
             </a>
 
-            <!-- 3. МЕСТО ПОД ПОЧТУ -->
-            <a href="mailto:tembulats2020@gmail.com" class="social-link" title="Написать на почту">
-              <img src="@/assets/gmail-logo.svg" alt="Email" class="social-icon" />
-             </a>
+            <!-- 3. ПОЧТА -->
+            <div class="social-link" title="Написать на почту" @click="isEmailOpen = true">
+              <img src="@/assets/logo/gmail-logo.svg" alt="Email" class="social-icon" />
+            </div>
+
           </div>
         </div>
 
@@ -75,9 +76,62 @@
               <div>
                 <h4>Обратная связь и вопросы</h4>
                 <p>По любым вопросам использования аналитической платформы, предложениям по сотрудничеству или улучшению интерфейса вы можете написать мне на прямую почту.</p>
-                <a href="mailto:tembulats2020@gmail.com" class="support-action">tembulats2020@gmail.com</a>
+                <a class="support-action" @click.prevent="isSupportOpen = false; isEmailOpen = true">tembulats2020@gmail.com</a>
               </div>
             </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА ПОЧТОВОГО СЕРВИСА -->
+    <div v-if="isEmailOpen" class="modal-overlay" @click.self="isEmailOpen = false">
+      <div class="modal-box email-modal-box">
+        <div class="modal-header">
+          <h3 class="modal-title">Написать на почту</h3>
+          <button @click="isEmailOpen = false" class="modal-close-btn">×</button>
+        </div>
+
+        <div class="modal-body">
+          <p class="email-modal-hint">Выберите сервис, в котором хотите открыть письмо на <span class="email-modal-address">{{ EMAIL }}</span></p>
+
+          <div class="email-options">
+
+            <a :href="emailLinks.gmail" target="_blank" rel="noopener" class="email-option" @click="isEmailOpen = false">
+              <span class="email-option-icon">
+                <img src="@/assets/logo/gmail-logo.svg" alt="Gmail" />
+              </span>
+              <span class="email-option-name">Gmail</span>
+            </a>
+
+            <a :href="emailLinks.outlook" target="_blank" rel="noopener" class="email-option" @click="isEmailOpen = false">
+              <span class="email-option-icon">
+                <img src="@/assets/logo/outlook-logo.svg" alt="Outlook" />
+              </span>
+              <span class="email-option-name">Outlook</span>
+            </a>
+
+            <a :href="emailLinks.yahoo" target="_blank" rel="noopener" class="email-option" @click="isEmailOpen = false">
+              <span class="email-option-icon">
+                <img src="@/assets/logo/yahoo-logo.svg" alt="Yahoo Mail" />
+              </span>
+              <span class="email-option-name">Yahoo Mail</span>
+            </a>
+
+            <a :href="emailLinks.mailru" target="_blank" rel="noopener" class="email-option" @click="isEmailOpen = false">
+              <span class="email-option-icon">
+                <img src="@/assets/logo/mailru-logo.svg" alt="Mail.ru" />
+              </span>
+              <span class="email-option-name">Mail.ru</span>
+            </a>
+
+            <a :href="emailLinks.yandex" target="_blank" rel="noopener" class="email-option" @click="isEmailOpen = false">
+              <span class="email-option-icon">
+                <img src="@/assets/logo/yandexMail-logo.svg" alt="Yandex.Mail" />
+              </span>
+              <span class="email-option-name">Yandex.Mail</span>
+            </a>
 
           </div>
         </div>
@@ -183,7 +237,6 @@
     transition: color 0.2s ease;
   }
 
-    /* Ховер в ваш фирменный розоватый тон */
     .footer-link:hover {
       color: #ea75a2;
     }
@@ -203,19 +256,19 @@
   }
 
     .footer-link-btn:hover {
-      color: #ea75a2; /* Ваш фирменный цвет */
+      color: #ea75a2;
     }
 
   /* Добавляем вертикальные разделители между ссылками */
   .footer-links .footer-link:not(:last-child)::after,
   .footer-links .footer-link-btn::after {
     content: '|';
-    margin-left: 16px; /* Отступ от текста ссылки до черточки */
-    margin-right: 16px; /* Отступ от черточки до следующей ссылки */
-    color: #2d2d2d; /* Спокойный темно-серый цвет, чтобы палочка не бросалась в глаза */
-    font-weight: 300; /* Делаем её тоненькой */
+    margin-left: 16px;
+    margin-right: 16px;
+    color: #2d2d2d;
+    font-weight: 300;
     display: inline-block;
-    pointer-events: none; /* Чтобы мышка ее игнорировала при кликах */
+    pointer-events: none;
   }
 
   /* Фон затемнения за окном */
@@ -235,7 +288,7 @@
 
   /* Сама коробка модального окна */
   .modal-box {
-    max-width: 600px; /* Увеличили с 550px до 600px для комфорта на ПК */
+    max-width: 600px;
     width: 100%;
     background-color: #141414;
     border: 1px solid #222222;
@@ -310,6 +363,7 @@
     font-size: 13px;
     font-weight: 600;
     text-decoration: none;
+    cursor: pointer;
   }
 
     .support-action:hover {
@@ -317,8 +371,8 @@
     }
 
   .footer-link-accent {
-    color: #ea75a2; /* Горит вашим фирменным розовым тоном по умолчанию */
-    font-weight: 600; /* Делаем шрифт капельку толще, чтобы привлечь внимание */
+    color: #ea75a2;
+    font-weight: 600;
   }
 
     .footer-link-accent:hover {
@@ -329,17 +383,17 @@
   .support-section-label {
     font-size: 12px;
     font-weight: 700;
-    color: #475569; /* Приглушенный серо-синий цвет */
+    color: #475569;
     text-transform: uppercase;
     letter-spacing: 1px;
     margin-top: 5px;
-    margin-bottom: -5px; /* Поджимаем отступ к карточке под ним */
+    margin-bottom: -5px;
   }
 
   /* Ряд для логотипа и блока соцсетей */
   .footer-logo-row {
     display: flex;
-    align-items: center; /* Выравнивает слово OrbitX и блок иконок по центру */
+    align-items: center;
     gap: 16px;
     margin-bottom: 8px;
   }
@@ -347,19 +401,20 @@
   /* Контейнер для всех быстрых иконок-ссылок */
   .footer-socials {
     display: flex;
-    align-items: center; /* ИЗМЕНЕНИЕ: Теперь иконки СТРОГО отцентрированы внутри своей коробки */
+    align-items: center;
     justify-content: center;
-    height: 24px; /* Подогнали высоту точно под высоту букв OrbitX */
+    height: 24px;
     gap: 14px;
   }
 
   /* Ссылка-обертка для иконки */
   .social-link {
-    display: flex; /* Поменяли на flex, чтобы убрать текстовые дефолтные отступы */
+    display: flex;
     align-items: center;
     justify-content: center;
     height: 100%;
     transition: transform 0.2s ease;
+    cursor: pointer;
   }
 
   /* Сама картинка иконки */
@@ -367,7 +422,7 @@
     width: 22px;
     height: 22px;
     object-fit: contain;
-    display: block; /* ИЗМЕНЕНИЕ: убирает скрытые шрифтовые отступы под картинкой */
+    display: block;
     margin-top: -8px;
   }
 
@@ -386,9 +441,82 @@
     color: #ea75a2;
   }
 
+  .email-modal-box {
+    max-width: 420px;
+  }
+
+  .email-modal-hint {
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.5;
+    margin-bottom: 18px;
+  }
+
+  .email-modal-address {
+    color: #ea75a2;
+    font-weight: 600;
+  }
+
+  .email-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .email-option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.02);
+    text-decoration: none;
+    transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  }
+
+    .email-option:hover {
+      background: rgba(234, 117, 162, 0.06);
+      border-color: rgba(234, 117, 162, 0.2);
+      transform: translateX(2px);
+    }
+
+  .email-option-icon {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+    .email-option-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+  .email-option-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e2e8f0;
+  }
 </style>
 
 <script setup>
   import { ref } from 'vue'
+
   const isSupportOpen = ref(false)
+  const isEmailOpen = ref(false)
+
+  const EMAIL = 'tembulats2020@gmail.com'
+
+  const emailLinks = {
+    gmail: `https://mail.google.com/mail/?view=cm&fs=1&to=${EMAIL}`,
+    outlook: `https://outlook.live.com/mail/0/deeplink/compose?to=${EMAIL}`,
+    yahoo: `https://compose.mail.yahoo.com/?to=${EMAIL}`,
+    mailru: `https://e.mail.ru/compose/?mailto=mailto%3A${EMAIL}`,
+    yandex: `https://mail.yandex.ru/compose?mailto=mailto:${EMAIL}`
+  }
 </script>

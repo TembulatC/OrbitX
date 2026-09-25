@@ -8,15 +8,15 @@ namespace OrbitX.Controllers
 {
     [ApiController]
     [Route("api/v1")]
-    public partial class TLEController : ControllerBase
+    public partial class SatelliteDataController : ControllerBase
     {
         private readonly ISatellitesService _satelliteDataService;
         private readonly ISatellitesGetService _satelliteGetService;
         private readonly ISatelliteSGPServices _satelliteSGPServices;
         private readonly SatelliteBackgroundWorker _worker;
-        private readonly ILogger<TLEController> _logger;
+        private readonly ILogger<SatelliteDataController> _logger;
 
-        public TLEController(ISatellitesService satelliteDataService, ISatellitesGetService satelliteGetService, ISatelliteSGPServices satelliteSGPServices, SatelliteBackgroundWorker worker, ILogger<TLEController> logger)
+        public SatelliteDataController(ISatellitesService satelliteDataService, ISatellitesGetService satelliteGetService, ISatelliteSGPServices satelliteSGPServices, SatelliteBackgroundWorker worker, ILogger<SatelliteDataController> logger)
         {
             _satelliteDataService = satelliteDataService;
             _satelliteGetService = satelliteGetService;
@@ -43,6 +43,8 @@ namespace OrbitX.Controllers
             return Ok();
         }
 
+
+        // 2 метода для получения данных спутников без обхода логгирования
         [HttpGet]
         [Route("[action]")]
         public async Task<IActionResult> GetSGP4DataById(int noradId)
@@ -89,6 +91,53 @@ namespace OrbitX.Controllers
 
             LogSuccessGetByName();
             return Ok(satelliteSPG);
+        }
+
+
+        // 2 метода для получения данных спутников в обход логгирования
+        [HttpGet]
+        [Route("[action]")]
+        public async Task<IActionResult> GetDataByName(string satelliteName)
+        {
+            using (LogContext.PushProperty("RequestSource", "Worker or Special"))
+            {
+                if (string.IsNullOrWhiteSpace(satelliteName))
+                {
+                    return BadRequest("Имя спутника не может быть пустым");
+                }
+
+                var satelliteSPG = await _satelliteSGPServices.GetSGPByName(satelliteName.ToUpper());
+
+                if (satelliteSPG == null)
+                {
+                    return NotFound($"Данных о спутнике {satelliteName} не существует либо произошел сбой в математических расчетах SGP4");
+                }
+
+                return Ok(satelliteSPG);
+            }            
+        }
+
+        [HttpGet]
+        [Route("[action]")]
+        public async Task<IActionResult> GetDataById(int noradId)
+        {
+            using (LogContext.PushProperty("RequestSource", "Worker or Special"))
+            {
+                if (noradId < 0)
+                {
+                    return BadRequest("NoradId не может быть отрицательным");
+                }
+
+                var satelliteSPG = await _satelliteSGPServices.GetSGPByID(noradId);
+
+                if (satelliteSPG == null)
+                {
+                    LogCancelNullById();
+                    return NotFound($"Данных о спутнике с ID {noradId} не существует либо произошел сбой в математических расчетах SGP4");
+                }
+
+                return Ok(satelliteSPG);
+            }        
         }
 
         [HttpGet]
