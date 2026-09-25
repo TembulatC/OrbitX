@@ -4,11 +4,11 @@ using Core.Modules.SatelliteData.Domain.Models;
 
 namespace OrbitX.BackgroundWorkers.Helper
 {
-    public partial class SatelliteTLEDownloader
+    public partial class SatelliteOMMDownloader
     {
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ISatellitesDataRepository _satellitesDataRepository;
-        private readonly ILogger<SatelliteTLEDownloader> _logger;
+        private readonly ILogger<SatelliteOMMDownloader> _logger;
         private readonly SatellitesParserService _satellitesParserService;
         private readonly static string[] CelestrakCategories = new[]
         {
@@ -21,7 +21,7 @@ namespace OrbitX.BackgroundWorkers.Helper
             "education", "military", "radar", "cubesat"
         };
 
-        public SatelliteTLEDownloader(IHttpClientFactory httpClientFactory, ISatellitesDataRepository satellitesDataRepository, ILogger<SatelliteTLEDownloader> logger, SatellitesParserService satellitesParserService)
+        public SatelliteOMMDownloader(IHttpClientFactory httpClientFactory, ISatellitesDataRepository satellitesDataRepository, ILogger<SatelliteOMMDownloader> logger, SatellitesParserService satellitesParserService)
         {
             _httpClientFactory = httpClientFactory;
             _satellitesDataRepository = satellitesDataRepository;

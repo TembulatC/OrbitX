@@ -30,7 +30,7 @@ namespace Core.Modules.SGP4Data.Application.Services
                 return null;
             }
 
-            var satelliteData = await _satelliteSGPRepository.GetTLEByID(noradId);
+            var satelliteData = await _satelliteSGPRepository.GetOMMByID(noradId);
 
             if (satelliteData == null)
             {
@@ -109,7 +109,7 @@ namespace Core.Modules.SGP4Data.Application.Services
                 return null;
             }
 
-            var satelliteData = await _satelliteSGPRepository.GetTLEByName(satelliteName);
+            var satelliteData = await _satelliteSGPRepository.GetOMMByName(satelliteName);
 
             if (satelliteData == null)
             {

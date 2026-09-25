@@ -23,7 +23,6 @@ namespace Core.Modules.SatelliteData.Application.Services
             if (string.IsNullOrEmpty(category)) return new List<SatellitesFilterDTO>();
 
             var satellitesList = await _satellitesGetDataRepository.GetSatellitesFiltersById(category, page, pageSize);
-
             if (satellitesList == null || satellitesList.Count <= 0 ) return new List<SatellitesFilterDTO>();
 
             List<SatellitesFilterDTO> satellitesListDTO = new List<SatellitesFilterDTO>();
@@ -47,7 +46,6 @@ namespace Core.Modules.SatelliteData.Application.Services
             if (string.IsNullOrEmpty(category)) return new List<SatellitesFilterDTO>();
 
             var satellitesList = await _satellitesGetDataRepository.GetSatellitesFiltersByName(category, page, pageSize);
-
             if (satellitesList == null || satellitesList.Count <= 0) return new List<SatellitesFilterDTO>();
 
             List<SatellitesFilterDTO> satellitesListDTO = new List<SatellitesFilterDTO>();

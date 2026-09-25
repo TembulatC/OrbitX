@@ -204,7 +204,7 @@
       // Отслеживаем реальное состояние загрузки тайлов, а не момент инициализации карты.
       // 'loading' срабатывает при каждом запросе новых тайлов (в т.ч. при zoom),
       // 'load' — когда все запрошенные тайлы догрузились,
-      // 'tileerror' — когда тайл не удалось получить 
+      // 'tileerror' — когда тайл не удалось получить
       mapTileLayer.on('loading', () => {
         isMapTileLoading.value = true
       })
@@ -480,7 +480,7 @@
     gap: 8px;
     padding: 6px 14px;
     border-radius: 20px;
-    height: 32px;
+    min-height: 32px;
     transition: all 0.3s ease;
   }
 
@@ -779,6 +779,16 @@
       gap: 12px;
     }
 
+    /* Без ограничения ширины длинный текст статуса ("Ошибка подключения...")
+       не переносится и вылезает за экран — задаём максимум и разрешаем перенос */
+    .sync-status-badge {
+      max-width: 100%;
+    }
+
+    .status-badge-text {
+      white-space: normal;
+    }
+
     .modeling-grid {
       flex-direction: column;
     }
@@ -789,10 +799,33 @@
 
     .telemetry-sidebar {
       width: 100%;
+      height: auto;
     }
 
     .map-container-box {
       height: 400px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .modeling-section {
+      padding: 24px 0;
+    }
+
+    .modeling-header-block {
+      padding: 18px;
+    }
+
+    .map-container-box {
+      height: 300px; /* На маленьких телефонах карта чуть ниже, чтобы страница помещалась без лишнего скролла */
+    }
+
+    .telemetry-sidebar {
+      padding: 18px;
+    }
+
+    .telemetry-value {
+      font-size: 19px;
     }
   }
 </style>
@@ -825,13 +858,25 @@
     background-color: #141414 !important;
     border: 1px solid #222222 !important;
     border-bottom: none !important;
+    touch-action: manipulation; /* Быстрый отклик на тап без задержки под двойной тап-зум */
   }
 
     .leaflet-control-zoom a:last-child {
       border-bottom: 1px solid #222222 !important;
     }
 
-    .leaflet-control-zoom a:hover {
+    .leaflet-control-zoom a:hover,
+    .leaflet-control-zoom a:active {
       background-color: #1e1e1e !important;
     }
+
+  /* На телефонах увеличиваем кнопки +/- зума до комфортного размера под палец */
+  @media (max-width: 768px) {
+    .leaflet-control-zoom a {
+      width: 40px !important;
+      height: 40px !important;
+      line-height: 40px !important;
+      font-size: 20px !important;
+    }
+  }
 </style>

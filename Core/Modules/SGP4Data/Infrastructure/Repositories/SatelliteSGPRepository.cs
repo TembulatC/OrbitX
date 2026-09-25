@@ -20,7 +20,7 @@ namespace Core.Modules.SGP4Data.Infrastructure.Repositories
             _cache = cache;
         }
 
-        public async Task<Satellite?> GetTLEByID(int noradId)
+        public async Task<Satellite?> GetOMMByID(int noradId)
         {
             LogLaunchById(noradId);
 
@@ -34,12 +34,12 @@ namespace Core.Modules.SGP4Data.Infrastructure.Repositories
             string cacheKey = $"omm:{noradId}";
 
             // Проверяем, есть ли уже данные в кеше
-            if (!_cache.TryGetValue(cacheKey, out Satellite? satelliteTLE))
+            if (!_cache.TryGetValue(cacheKey, out Satellite? satelliteOMM))
             {
                 // Если в кеше нет — один раз идем в базу данных
-                satelliteTLE = await _dbContext.SatellitesTLE.FindAsync(noradId);
+                satelliteOMM = await _dbContext.SatellitesTLE.FindAsync(noradId);
 
-                if (satelliteTLE != null)
+                if (satelliteOMM != null)
                 {
                     LogSuccessById();
 
@@ -53,7 +53,7 @@ namespace Core.Modules.SGP4Data.Infrastructure.Repositories
                     .SetPriority(CacheItemPriority.High);
 
                     // Записываем OMM-сущность из базы в оперативную память сервера
-                    _cache.Set(cacheKey, satelliteTLE, cacheOptions);
+                    _cache.Set(cacheKey, satelliteOMM, cacheOptions);
                 }
                 else
                 {
@@ -63,16 +63,16 @@ namespace Core.Modules.SGP4Data.Infrastructure.Repositories
                     .SetAbsoluteExpiration(TimeSpan.FromSeconds(30));
 
                     // Записываем OMM-сущность из базы в оперативную память сервера
-                    _cache.Set(cacheKey, satelliteTLE, cacheOptions);
+                    _cache.Set(cacheKey, satelliteOMM, cacheOptions);
 
                     LogNotFoundById(noradId);
                 }           
             }
 
-            return satelliteTLE;
+            return satelliteOMM;
         }
 
-        public async Task<Satellite?> GetTLEByName(string satelliteName)
+        public async Task<Satellite?> GetOMMByName(string satelliteName)
         {
             LogLaunchByName(satelliteName);
 
@@ -85,12 +85,12 @@ namespace Core.Modules.SGP4Data.Infrastructure.Repositories
                 return null;
             }
 
-            if (!_cache.TryGetValue(cacheKey, out Satellite? satelliteTLE))
+            if (!_cache.TryGetValue(cacheKey, out Satellite? satelliteOMM))
             {
                 // Если в кеше нет — один раз идем в базу данных
-                satelliteTLE = await _dbContext.SatellitesTLE.AsNoTracking().FirstOrDefaultAsync(s => s.OBJECT_NAME == satelliteName);
+                satelliteOMM = await _dbContext.SatellitesTLE.AsNoTracking().FirstOrDefaultAsync(s => s.OBJECT_NAME == satelliteName);
 
-                if (satelliteTLE != null)
+                if (satelliteOMM != null)
                 {
                     LogSuccessByName();
 
@@ -104,7 +104,7 @@ namespace Core.Modules.SGP4Data.Infrastructure.Repositories
                     .SetPriority(CacheItemPriority.High);
 
                     // Записываем OMM-сущность из базы в оперативную память сервера
-                    _cache.Set(cacheKey, satelliteTLE, cacheOptions);
+                    _cache.Set(cacheKey, satelliteOMM, cacheOptions);
                 }
                 else
                 {
@@ -114,13 +114,13 @@ namespace Core.Modules.SGP4Data.Infrastructure.Repositories
                     .SetAbsoluteExpiration(TimeSpan.FromSeconds(30));
 
                     // Записываем OMM-сущность из базы в оперативную память сервера
-                    _cache.Set(cacheKey, satelliteTLE, cacheOptions);
+                    _cache.Set(cacheKey, satelliteOMM, cacheOptions);
 
                     LogNotFoundByName(satelliteName);
                 }
             }
 
-            return satelliteTLE;
+            return satelliteOMM;
         }
     }
 }

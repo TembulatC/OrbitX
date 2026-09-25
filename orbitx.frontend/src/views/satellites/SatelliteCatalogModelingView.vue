@@ -10,7 +10,7 @@
           <div class="main-search">
             <input v-model="searchQuery" type="text" placeholder="Поиск спутника по названию или ID..." class="form-input" @keyup.enter="handleTopSearch" />
           </div>
-          <!-- Кнопка-поиск: пределяет число это или текст и дергает нужный метод API -->
+          <!-- Кнопка-поиск: определяет число это или текст и дергает нужный метод API -->
           <button type="button" class="btn-search-small" title="Найти по названию/ID" @click="handleTopSearch">
             ПОИСК
           </button>
@@ -430,11 +430,19 @@
     padding-bottom: 1px;
     font-family: "Exo 2", sans-serif;
     font-weight: 600;
+    touch-action: manipulation; /* Убирает 300мс задержку тапа и случайный зум по двойному тапу на мобильных */
   }
 
-    .btn-search-small:hover {
+    .btn-search-small:hover,
+    .btn-search-small:active {
       border-color: #ea75a2;
       color: #ea75a2;
+    }
+
+    /* Явный отклик при нажатии */
+    .btn-search-small:active {
+      background-color: #232323;
+      transform: scale(0.97);
     }
 
   .row-two {
@@ -463,6 +471,7 @@
     outline: none;
     transition: border-color 0.2s ease;
     font-family: "Exo 2", sans-serif;
+    touch-action: manipulation; /* Быстрее реагируют на тап, без задержки под двойной тап-зум */
   }
 
   .form-select {
@@ -494,11 +503,17 @@
     transition: all 0.2s ease;
     margin-top: 1px;
     font-family: "Exo 2", sans-serif;
+    touch-action: manipulation;
   }
 
-    .btn-search-submit:hover {
+    .btn-search-submit:hover,
+    .btn-search-submit:active {
       background-color: #ec4899;
       border-color: #ec4899;
+    }
+
+    .btn-search-submit:active {
+      transform: scale(0.97);
     }
 
   .table-block {
@@ -574,9 +589,11 @@
     text-decoration: none;
     cursor: pointer;
     transition: all 0.2s ease;
+    touch-action: manipulation;
   }
 
-    .btn-modeling:hover {
+    .btn-modeling:hover,
+    .btn-modeling:active {
       background-color: #ea75a2;
       color: #ffffff;
     }
@@ -605,11 +622,17 @@
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
+    touch-action: manipulation;
   }
 
-    .pag-btn:hover {
+    .pag-btn:hover,
+    .pag-btn:active {
       border-color: #ea75a2;
       color: #ea75a2;
+    }
+
+    .pag-btn:active {
+      transform: scale(0.94);
     }
 
   /* Поле ручного ввода страницы */
@@ -664,6 +687,56 @@
     .btn-search-small, .btn-search-submit {
       width: 100%;
     }
+
+    /* На iOS Safari инпут/селект с font-size меньше 16px заставляет браузер
+       автоматически зумить страницу при фокусе — из-за этого кажется, что
+       элементы "уезжают" и перестают откликаться на нажатия. Держим 16px. */
+    .form-input, .form-select {
+      font-size: 16px;
+      height: 46px; /* Чуть выше — удобнее попадать пальцем */
+    }
+
+    .btn-search-small,
+    .btn-search-submit {
+      height: 46px;
+    }
+
+    /* Увеличиваем зону нажатия у кнопок пагинации до рекомендуемых ~44px */
+    .pag-btn {
+      width: 44px;
+      height: 44px;
+    }
+
+    .pag-input {
+      height: 44px;
+      font-size: 16px;
+    }
+
+    /* Ссылка-кнопка "Запустить" в таблице — увеличиваем зону нажатия */
+    .btn-modeling {
+      padding: 10px 18px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .catalog-section {
+      padding: 32px 0;
+    }
+
+    .filters-block {
+      padding: 16px;
+    }
+
+    .satellites-table th,
+    .satellites-table td {
+      padding: 12px 14px;
+      font-size: 13px;
+    }
+
+    .btn-modeling {
+      padding: 8px 14px;
+      font-size: 13px;
+    }
   }
 
   .toast-notification {
@@ -683,6 +756,19 @@
     z-index: 1000; /* Поверх всех таблиц и кнопок */
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); /* Объемная тень под коробкой */
     animation: slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* На узких экранах уведомление занимает всю ширину с отступами —
+     иначе при right: 40px оно частично уезжало за левый край экрана
+     (в котором лежала часть текста, а зона под кнопку "×" сжималась) */
+  @media (max-width: 480px) {
+    .toast-notification {
+      left: 16px;
+      right: 16px;
+      bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+      max-width: none;
+      width: auto;
+    }
   }
 
   @keyframes slide-in {
@@ -729,12 +815,14 @@
     font-size: 20px;
     line-height: 1;
     cursor: pointer;
-    padding: 0;
-    margin-top: -2px;
+    padding: 8px; /* Увеличенная зона нажатия под палец, визуально компенсируем отрицательным отступом */
+    margin: -8px -8px -8px 0;
+    touch-action: manipulation;
     transition: color 0.2s ease;
   }
 
-    .toast-close-btn:hover {
+    .toast-close-btn:hover,
+    .toast-close-btn:active {
       color: #ffffff;
     }
 </style>

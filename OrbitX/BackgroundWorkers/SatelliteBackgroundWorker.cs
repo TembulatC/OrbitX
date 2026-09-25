@@ -132,7 +132,7 @@ namespace OrbitX.BackgroundWorkers
                     {
                         stoppingToken.ThrowIfCancellationRequested();
 
-                        var downloaderTLE = scope.ServiceProvider.GetRequiredService<SatelliteTLEDownloader>();
+                        var downloaderTLE = scope.ServiceProvider.GetRequiredService<SatelliteOMMDownloader>();
                         await downloaderTLE.GetSatelliteData(stoppingToken);
                     }
 
