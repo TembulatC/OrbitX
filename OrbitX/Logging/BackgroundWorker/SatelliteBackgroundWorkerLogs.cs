@@ -79,7 +79,7 @@
 
 namespace OrbitX.BackgroundWorkers.Helper
 {
-    public partial class SatelliteTLEDownloader
+    public partial class SatelliteOMMDownloader
     {
         [LoggerMessage(
             EventId = 4001,

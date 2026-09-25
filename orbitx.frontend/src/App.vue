@@ -87,7 +87,7 @@
     transition: all 0.3s ease;
   }
 
-    /* Эффект при наведении мышки (Розовый стиль OrbitX) */
+    /* Эффект при наведении мышки */
     .scroll-top-btn:hover {
       color: #ffffff;
       background-color: #ea75a2;
@@ -95,4 +95,35 @@
       box-shadow: 0 0 15px rgba(236, 72, 153, 0.4);
       transform: translateY(-3px); /* Кнопка слегка приподнимается */
     }
+
+  @media (max-width: 768px) {
+    .container {
+      padding: 0 16px; /* Чуть уже отступы, чтобы не "съедать" контент на узких экранах */
+    }
+
+    .scroll-top-btn {
+      width: 40px;
+      height: 40px;
+      font-size: 18px;
+      bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+      left: 20px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .container {
+      padding: 0 12px;
+    }
+  }
+
+  /* Наведение мышью не работает на тач-устройствах — не даём кнопке залипать в розовом */
+  @media (hover: none) {
+    .scroll-top-btn:hover {
+      background-color: #141414;
+      border-color: #2d2d2d;
+      color: #94a3b8;
+      transform: none;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+  }
 </style>

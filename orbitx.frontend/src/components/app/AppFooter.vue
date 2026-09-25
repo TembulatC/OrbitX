@@ -228,12 +228,16 @@
   .footer-links {
     display: flex;
     align-items: center;
+    flex-wrap: wrap; /* Если ссылки не помещаются в ряд — переносим их ЦЕЛИКОМ, а не по словам */
+    row-gap: 10px;
+    justify-content: flex-end; /* На ПК/средних экранах держим прижатыми вправо */
   }
 
   .footer-link {
     font-size: 14px;
     color: #94a3b8;
     text-decoration: none;
+    white-space: nowrap; /* Запрещаем тексту ссылки рваться посередине слова */
     transition: color 0.2s ease;
   }
 
@@ -249,6 +253,7 @@
     color: #94a3b8;
     cursor: pointer;
     padding: 0;
+    white-space: nowrap; /* Запрещаем тексту кнопки рваться посередине слова */
     transition: color 0.2s ease;
     font-family: 'Exo 2', sans-serif;
     display: inline-flex;
@@ -277,12 +282,17 @@
     top: 0;
     left: 0;
     width: 100vw;
+    /* 100dvh вместо 100vh — учитывает реальную видимую высоту на мобильных
+       (без него на iOS/Android высота "прыгает" из-за адресной строки браузера) */
     height: 100vh;
+    height: 100dvh;
     background-color: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(5px); /* Размываем сайт на заднем плане */
     display: flex;
     align-items: center;
     justify-content: center;
+    /* Отступы по краям + safe-area, чтобы окно не прилипало к краям экрана и не пряталось под чёлку/жестовую полосу */
+    padding: 24px calc(20px + env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) calc(20px + env(safe-area-inset-left, 0px));
     z-index: 1000;
   }
 
@@ -290,6 +300,11 @@
   .modal-box {
     max-width: 600px;
     width: 100%;
+    /* Ограничиваем высоту видимой областью и разрешаем скролл ВНУТРИ окна,
+       если контент (например, список поддержки) не помещается */
+    max-height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* Плавный инерционный скролл на iOS */
     background-color: #141414;
     border: 1px solid #222222;
     border-radius: 16px;
@@ -501,6 +516,65 @@
     font-size: 14px;
     font-weight: 600;
     color: #e2e8f0;
+  }
+
+  @media (max-width: 768px) {
+    .orbitx-footer {
+      padding: 32px 0 calc(24px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* На узких экранах левый и правый блок складываем в колонку */
+    .footer-wrapper {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 24px;
+    }
+
+    .footer-right {
+      align-items: flex-start; /* На мобильных прижимаем к левому краю, как и левый блок */
+      width: 100%;
+      gap: 14px;
+    }
+
+    /* Ссылки в подвале переносятся на новую строку, а не сжимаются в одну */
+    .footer-links {
+      flex-wrap: wrap;
+      row-gap: 10px;
+    }
+
+      .footer-links .footer-link:not(:last-child)::after,
+      .footer-links .footer-link-btn::after {
+        margin-left: 12px;
+        margin-right: 12px;
+      }
+
+    /* Модальные окна занимают почти всю ширину экрана с безопасными отступами,
+       но остаются по центру и скроллятся внутри, если контента много */
+    .modal-overlay {
+      padding: 16px;
+    }
+
+    .modal-box {
+      max-width: 100%;
+      padding: 20px;
+      border-radius: 16px;
+    }
+
+    .support-item {
+      flex-direction: column;
+      gap: 8px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .footer-logo-row {
+      flex-wrap: wrap;
+      row-gap: 10px;
+    }
+
+    .status-text {
+      font-size: 11px;
+    }
   }
 </style>
 

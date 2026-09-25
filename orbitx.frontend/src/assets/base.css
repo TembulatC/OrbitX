@@ -1,0 +1,70 @@
+/* Убираем разъезжание ширины из-за скроллбара/safe-area и горизонтальный скролл */
+html {
+  -webkit-text-size-adjust: 100%; /* iOS Safari не увеличивает шрифт сам по себе при повороте экрана */
+  text-size-adjust: 100%;
+}
+
+body {
+  overflow-x: hidden; /* Страховка от "выезжающих" за экран блоков на мобильных */
+  width: 100%;
+}
+
+/* Убираем подсветку тапа на мобильных (синий/серый прямоугольник при нажатии) */
+a, button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Ссылки по умолчанию наследуют стиль текста, а не стандартный синий/фиолетовый браузерный */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Сброс стандартных стилей кнопок, чтобы везде выглядели одинаково (Safari особенно капризен) */
+button {
+  font-family: inherit;
+  font-size: 100%;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Инпуты/textarea наследуют шрифт (Safari/Firefox по умолчанию ставят системный) */
+input, textarea, select {
+  font-family: inherit;
+  font-size: 100%;
+  color: inherit;
+}
+
+/* Списки без буллетов и отступов по умолчанию */
+ul, ol {
+  list-style: none;
+}
+
+/* Заголовки наследуют насыщенность, чтобы не зависеть от браузерных дефолтов */
+h1, h2, h3, h4, h5, h6 {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+/* SVG аккуратно вписываются в родителя */
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* Плавный скролл, но с уважением к настройке "уменьшить движение" у пользователя */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

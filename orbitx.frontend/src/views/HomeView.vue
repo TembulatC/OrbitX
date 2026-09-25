@@ -117,7 +117,7 @@
   }
 
   .hero-title {
-    font-size: 48px;
+    font-size: clamp(28px, 5.5vw, 48px);
     font-weight: 800;
     line-height: 1.2;
     margin-bottom: 24px;
@@ -130,7 +130,7 @@
   }
 
   .hero-subtitle {
-    font-size: 18px;
+    font-size: clamp(15px, 2.2vw, 18px);
     line-height: 1.6;
     color: #94a3b8; /* Спокойный серо-голубой цвет текста */
     margin-bottom: 40px;
@@ -403,17 +403,165 @@
     border-color: rgba(255, 255, 255, 0.08);
     background: rgba(40, 40, 40, 0.4);
   }
+
+  /* Планшеты (до 1024px): уменьшаем радар, чтобы он не толкал текст */
+  @media (max-width: 1024px) {
+    .radar-placeholder {
+      width: 240px;
+      height: 240px;
+    }
+
+      .radar-placeholder::before {
+        width: 110px;
+        height: 110px;
+      }
+  }
+
+  /* Мобильные и узкие планшеты (до 768px): hero встает в колонку,
+     радар уходит под текст и уменьшается, дорожная карта сжимает отступы */
+  @media (max-width: 768px) {
+    .hero-section {
+      min-height: auto; /* На мобильных не тянем на весь экран — контент сам определяет высоту */
+      padding: 32px 0;
+    }
+
+    .hero-wrapper {
+      flex-direction: column-reverse; /* Радар уходит наверх, текст остаётся легче для чтения */
+      text-align: center;
+      gap: 24px;
+    }
+
+    .hero-content {
+      max-width: 100%;
+    }
+
+    .hero-subtitle {
+      margin-bottom: 28px;
+    }
+
+    .hero-actions {
+      justify-content: center;
+      flex-wrap: wrap; /* Кнопки переносятся, если не помещаются в ряд */
+    }
+
+    .btn {
+      flex: 1 1 auto;
+      justify-content: center;
+      padding: 12px 20px;
+    }
+
+    .radar-placeholder {
+      width: 160px;
+      height: 160px;
+    }
+
+      .radar-placeholder::before {
+        width: 75px;
+        height: 75px;
+      }
+
+    .roadmap-section {
+      min-height: auto;
+      margin-bottom: 48px;
+    }
+
+    .roadmap-box {
+      padding: 32px 20px;
+      border-radius: 16px;
+    }
+
+    .section-title {
+      font-size: clamp(24px, 6vw, 32px);
+    }
+
+    .section-subtitle {
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+
+    /* Сдвигаем линию и значки таймлайна ближе к краю, чтобы карточки не сжимались */
+    .roadmap-timeline {
+      padding-left: 34px;
+    }
+
+    .roadmap-badge {
+      left: -34px;
+      width: 28px;
+      height: 28px;
+      font-size: 12px;
+    }
+
+    .roadmap-content {
+      padding: 18px 16px;
+    }
+
+    .roadmap-item-title {
+      font-size: 18px;
+    }
+
+    .roadmap-item-text,
+    .roadmap-item-text li {
+      font-size: 14px;
+    }
+
+    /* На тач-устройствах нет наведения — не сдвигаем карточку вбок при тапе */
+    .roadmap-item.completed .roadmap-content:hover,
+    .roadmap-item.active .roadmap-content:hover,
+    .roadmap-item:not(.completed):not(.active) .roadmap-content:hover {
+      transform: none;
+    }
+  }
+
+  /* Маленькие телефоны (до 380px) */
+  @media (max-width: 380px) {
+    .hero-actions {
+      flex-direction: column; /* Кнопки друг под другом на самых узких экранах */
+      width: 100%;
+    }
+
+    .btn {
+      width: 100%;
+    }
+
+    .radar-placeholder {
+      width: 130px;
+      height: 130px;
+    }
+
+      .radar-placeholder::before {
+        width: 60px;
+        height: 60px;
+      }
+
+    .roadmap-timeline {
+      padding-left: 28px;
+    }
+
+    .roadmap-badge {
+      left: -28px;
+      width: 24px;
+      height: 24px;
+      font-size: 11px;
+      top: 4px;
+    }
+  }
 </style>
 
 <script setup>
-  const scrollToRoadmap = () =>
-  {
-    // Находим нашу секцию на странице
+  const scrollToRoadmap = () => {
+    // Находим секцию на странице
     const element = document.getElementById('roadmap')
 
     if (element) {
-      // Плавно скроллим к ней без изменения адресной строки
-      element.scrollIntoView({ behavior: 'smooth' })
+      // Считаем позицию вручную через getBoundingClientRect + window.scrollTo —
+      // это работает стабильнее, чем element.scrollIntoView(), особенно на мобильных
+      // браузерах (iOS Safari иногда игнорирует scrollIntoView при сложной верстке)
+      const top = element.getBoundingClientRect().top + window.scrollY
+
+      window.scrollTo({
+        top,
+        behavior: 'smooth'
+      })
     }
   }
 </script>
